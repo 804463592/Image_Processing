@@ -1,6 +1,8 @@
 
 //使用了github仓库 ~~~
 
+//包含了github中图片文件
+
 // Image_ProcessingView.cpp : CImage_ProcessingView 类的实现
 
 #include "stdafx.h"
