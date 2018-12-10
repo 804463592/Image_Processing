@@ -1,6 +1,7 @@
 
+//使用了github仓库 ~~~
+
 // Image_ProcessingView.cpp : CImage_ProcessingView 类的实现
-//
 
 #include "stdafx.h"
 // SHARED_HANDLERS 可以在实现预览、缩略图和搜索筛选器句柄的
