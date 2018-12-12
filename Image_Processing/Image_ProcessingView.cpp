@@ -2849,8 +2849,8 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 	myProCtrl.Create(WS_CHILD | WS_VISIBLE | PBS_SMOOTHREVERSE, proRect, this, 99); //创建位置、大小
 
 
-	BYTE* z_max = new BYTE[3];
-	BYTE* z_min = new BYTE[3];  //实际上是unsigned char
+	BYTE* z_max = new BYTE[3];//实际上是unsigned char
+	BYTE* z_min = new BYTE[3];  
 	BYTE* z_med = new BYTE[3];
 
 	int hk = 0;
@@ -2861,7 +2861,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 			for (int k = 0; k < 3; k++)  //三个通道,各自单独 处理
 			{
 
-				for (m = m_start, n = n_start; m < m_max + 1, n < n_max + 1; m++, n++)  //m,n从5开始增加,比从3开始增加,效果好很多
+				for (m = m_start, n = n_start; m < m_max + 1, n < n_max + 1; m++, n++)  //m,n从5开始增加,比从3开始增加,效果好一点
 				{
 
 					//动态分配一个二维数组保存模板内的图像灰度
@@ -2896,7 +2896,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 						delete[]rgbArr[k];
 					}
 					delete[]rgbArr;
-					// 判断
+					
 					newImageArr[k][i][j] = z_med[k];
 					
 					//判断中值是否是噪点
@@ -2922,7 +2922,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 			}
 
 		}
-
 
 		double p;
 		p = (double)i / (double)(h - ((m*n - 1) / 2));
