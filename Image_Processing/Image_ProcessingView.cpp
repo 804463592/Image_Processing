@@ -1,5 +1,9 @@
 
+//修改的小细节~
+
 //使用了github仓库 ~~~
+
+//包含了github中图片文件
 
 // Image_ProcessingView.cpp : CImage_ProcessingView 类的实现
 
@@ -2782,7 +2786,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 	}
 
-
+	m_Image.Flag = 0;
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
@@ -2893,6 +2897,8 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 					}
 					delete[]rgbArr;
 					
+					BYTE hhhh =1;
+
 					newImageArr[k][i][j] = z_med[k];
 					
 					//判断中值是否是噪点
