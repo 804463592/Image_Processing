@@ -2897,8 +2897,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 					}
 					delete[]rgbArr;
 					
-					BYTE hhhh =0;
-
+					
 					newImageArr[k][i][j] = z_med[k];
 					
 					//判断中值是否是噪点
