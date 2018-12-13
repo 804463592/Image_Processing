@@ -2897,7 +2897,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 					}
 					delete[]rgbArr;
 					
-					BYTE hhhh =0;
+					BYTE hhhh =1;
 
 					newImageArr[k][i][j] = z_med[k];
 					
