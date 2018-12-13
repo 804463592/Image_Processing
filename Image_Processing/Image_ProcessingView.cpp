@@ -1045,7 +1045,6 @@ void CImage_ProcessingView::OnMeanfilter()
 	if (m_Image.IsNull())
 	{
 		OnFileOpen();
-		//_T("请先打开一幅图像！"));
 		return;
 	}
 	m_Image.Flag = 0;	//恢复FLAG
@@ -1064,10 +1063,10 @@ void CImage_ProcessingView::OnMeanfilter()
 		//判断是否输入有效的数字
 		while (dlg.filterSize % 2 == 0 || dlg.filterSize<0 || dlg.filterSize>w || dlg.filterSize > h)
 		{
-			MessageBox(_T("输入模板尺寸无效\n请重新输入合适的正奇数值"));
+			MessageBox(_T("输入模板尺寸无效,请重新输入合适的正奇数值"));
 			if (IDOK == dlg.DoModal())
 			{
-				UpdateData();
+				//UpdateData();
 			}
 			else
 			{
@@ -1075,20 +1074,20 @@ void CImage_ProcessingView::OnMeanfilter()
 			}
 		}
 
-		long B = 0, G = 0, R = 0;//累加存储，使用BYTE类型会产生溢出
+		long B = 0, G = 0, R = 0;//累加存储，使用BYTE类型会产生溢出,因为BYTE（unsigned char）最大只能等于255
 
 		//创建新三维数组，用于暂存新图、没有初始化！
-		BYTE *** NewPicture;
-		NewPicture = new  BYTE **[3];//3个维度；分配内存  
+		BYTE *** newImageArr;
+		newImageArr = new  BYTE **[3];//3个维度；分配内存  
 		for (int i = 0; i < 3; i++)
 		{
-			NewPicture[i] = new  BYTE*[h];   //先H
+			newImageArr[i] = new  BYTE*[h];   //先H
 		}
 		for (int i = 0; i < 3; i++)
 		{
 			for (int j = 0; j < h; j++)
 			{
-				NewPicture[i][j] = new BYTE[w];   //后W
+				newImageArr[i][j] = new BYTE[w];   //后W
 			}
 		}
 		//int filter_size =13;  //先设定一个默认值,然后再考虑通过对话框来获取
@@ -1122,9 +1121,9 @@ void CImage_ProcessingView::OnMeanfilter()
 						R += m_Image.m_pBits[2][j + k][i + kk];//累加求和
 					}
 				}
-				NewPicture[0][j][i] = B / (filter_size*filter_size);
-				NewPicture[1][j][i] = G / (filter_size*filter_size);
-				NewPicture[2][j][i] = R / (filter_size*filter_size);
+				newImageArr[0][j][i] = B / (filter_size*filter_size);
+				newImageArr[1][j][i] = G / (filter_size*filter_size);
+				newImageArr[2][j][i] = R / (filter_size*filter_size);
 			}
 			double p;
 			p = (double)j / (double)(h - ((filter_size - 1) / 2));
@@ -1139,28 +1138,24 @@ void CImage_ProcessingView::OnMeanfilter()
 		{
 			for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
 			{
-				m_Image.m_pBits[0][j][i] = NewPicture[0][j][i];
-				m_Image.m_pBits[1][j][i] = NewPicture[1][j][i];
-				m_Image.m_pBits[2][j][i] = NewPicture[2][j][i];
+				m_Image.m_pBits[0][j][i] = newImageArr[0][j][i];
+				m_Image.m_pBits[1][j][i] = newImageArr[1][j][i];
+				m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
 			}
 		}
-		//指针delete
-		//////////////////////////////////////////////////////////////////////////
+		
 
-		for (int i = 0; i < 3; i++)
+		for (int k = 0; k < 3; k++)
 		{
 			for (int j = 0; j < h; j++)
 			{
-				delete[] NewPicture[i][j];//回收内存
+				delete[] newImageArr[k][j];//回收内存
 			}
+			delete[] newImageArr[k];
 		}
-		for (int i = 0; i < 3; i++)
-		{
-			delete[] NewPicture[i];
-		}
-		delete[] NewPicture;
+		delete[] newImageArr;
 
-		//////////////////////////////////////////////////////////////////////////
+
 		Invalidate(1);
 	}
 
@@ -1173,10 +1168,9 @@ void CImage_ProcessingView::OnMeadianfilter()
 	//注意:中值滤波很耗时
 	// TODO: 在此添加命令处理程序代码
 
-	if (m_Image.IsNull()) //判断图像是否为空，如果对空图像进行操作会出现未知的错误
+	if (m_Image.IsNull()) 
 	{
 		OnFileOpen();
-		//_T("请先打开一幅图像！"));
 		return;
 	}
 	m_Image.Flag = 0;	//恢复FLAG
@@ -1204,6 +1198,11 @@ void CImage_ProcessingView::OnMeadianfilter()
 				return;
 			}
 		}
+	}
+	else {
+		return;
+	}
+
 
 		int filter_size = (int)dlg.filterSize;
 
@@ -1219,18 +1218,18 @@ void CImage_ProcessingView::OnMeadianfilter()
 		//myProCtrl.Create(WS_VISIBLE, proRect, this, 99); //创建位置、大小
 		myProCtrl.Create(WS_CHILD | WS_VISIBLE | PBS_SMOOTHREVERSE, proRect, this, 99); //创建位置、大小
 
-		//创建新三维数组，用于暂存新图！
-		BYTE *** NewPicture = nullptr;
-		NewPicture = new  BYTE **[3];//3个维度；分配内存  
+		//三维数组存新图！
+		BYTE *** newImageArr = nullptr;
+		newImageArr = new  BYTE **[3];//3个维度；分配内存  
 		for (int i = 0; i < 3; i++)
 		{
-			NewPicture[i] = new  BYTE*[h];   //先H
+			newImageArr[i] = new  BYTE*[h];   //先H
 		}
 		for (int i = 0; i < 3; i++)
 		{
 			for (int j = 0; j < h; j++)
 			{
-				NewPicture[i][j] = new BYTE[w];   //后W
+				newImageArr[i][j] = new BYTE[w];   //后W
 			}
 		}
 
@@ -1261,9 +1260,9 @@ void CImage_ProcessingView::OnMeadianfilter()
 				std::sort(B, B + filter_size * filter_size);//sort排序,需要 #include <algorithm>
 				std::sort(G, G + filter_size * filter_size);//因为需要大量的排序,因此速度很慢
 				std::sort(R, R + filter_size * filter_size);
-				NewPicture[0][j][i] = B[(filter_size*filter_size - 1) / 2 + 1];//取中值
-				NewPicture[1][j][i] = G[(filter_size*filter_size - 1) / 2 + 1];
-				NewPicture[2][j][i] = R[(filter_size*filter_size - 1) / 2 + 1];
+				newImageArr[0][j][i] = B[(filter_size*filter_size - 1) / 2 + 1];//取中值
+				newImageArr[1][j][i] = G[(filter_size*filter_size - 1) / 2 + 1];
+				newImageArr[2][j][i] = R[(filter_size*filter_size - 1) / 2 + 1];
 			}
 
 			double p;
@@ -1279,32 +1278,29 @@ void CImage_ProcessingView::OnMeadianfilter()
 		{
 			for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
 			{
-				m_Image.m_pBits[0][j][i] = NewPicture[0][j][i];
-				m_Image.m_pBits[1][j][i] = NewPicture[1][j][i];
-				m_Image.m_pBits[2][j][i] = NewPicture[2][j][i];
+				m_Image.m_pBits[0][j][i] = newImageArr[0][j][i];
+				m_Image.m_pBits[1][j][i] = newImageArr[1][j][i];
+				m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
 			}
 		}
 
 		//回收指针
-		//////////////////////////////////////////////////////////////////////////
 
 		for (int i = 0; i < 3; i++)
 		{
 			for (int j = 0; j < h; j++)
 			{
-				delete[] NewPicture[i][j];//回收内存
+				delete[] newImageArr[i][j];//回收内存
 			}
 		}
 		for (int i = 0; i < 3; i++)
 		{
-			delete[] NewPicture[i];
+			delete[] newImageArr[i];
 		}
-		delete[] NewPicture;
+		delete[] newImageArr;
 
-		//////////////////////////////////////////////////////////////////////////
 		Invalidate(1);
-	}
-
+	
 }
 
 
@@ -1904,11 +1900,11 @@ void CImage_ProcessingView::OnFrequencyDomainShift()
 
 void CImage_ProcessingView::OnGeometricmeanfilter()
 {
-	//// TODO: 在此添加命令处理程序代码
+	// TODO: 在此添加命令处理程序代码
 	if (m_Image.IsNull()) {
 
 		OnFileOpen();
-		//return;
+		return;
 	}
 	m_Image.Flag = 0;
 
@@ -2017,7 +2013,7 @@ void CImage_ProcessingView::OnGeometricmeanfilter()
 
 void CImage_ProcessingView::OnHarmonicmeanfilter()
 {
-	// TODO: 在此添加命令处理程序代码
+	// TODO: 在此添加命令处理程序代码，谐波均值滤波
 	if (m_Image.IsNull()) {
 
 		OnFileOpen();
@@ -2127,8 +2123,8 @@ void CImage_ProcessingView::OnHarmonicmeanfilter()
 
 void CImage_ProcessingView::OnContraharmonicmeanfilter()
 {
-	// TODO: 在此添加命令处理程序代码
-	// TODO: 在此添加命令处理程序代码
+
+	// TODO: 在此添加命令处理程序代码：逆谐波均值滤波器
 	if (m_Image.IsNull()) {
 
 		OnFileOpen();
@@ -2442,7 +2438,8 @@ void CImage_ProcessingView::OnGaussiannoise()
 			{
 				X = V2 * sqrt(-2 * log(S) / S);
 
-			} phase = 1 - phase;
+			} 
+			phase = 1 - phase;
 
 			int g_noise = (int)(mean + sigma * X) *T;
 
@@ -2863,14 +2860,12 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 				for (m = m_start, n = n_start; m < m_max + 1, n < n_max + 1; m++, n++)  //m,n从5开始增加,比从3开始增加,效果好一点
 				{
-
 					//动态分配一个二维数组保存模板内的图像灰度
 					BYTE ** rgbArr = new BYTE *[3];
 					for (int k = 0; k < 3; k++)
 					{
 						rgbArr[k] = new BYTE[m*n];
 					}
-
 
 					for (int p = (int)(1 - m) / 2; p < int((m - 1) / 2 + 1); p++)
 					{
@@ -2897,8 +2892,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 					}
 					delete[]rgbArr;
 					
-					BYTE hhhh =1;
-
 					newImageArr[k][i][j] = z_med[k];
 					
 					//判断中值是否是噪点
@@ -2939,6 +2932,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 		{
 			for (int k = 0; k < 3; k++)
 			{
+
 				m_Image.m_pBits[k][i][j] = newImageArr[k][i][j];
 
 			}
