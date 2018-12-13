@@ -2969,5 +2969,22 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
+	//TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
+	//而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
+
+	const int min_theta = 0;
+	const int max_theta = 180;
+
+	int max_thro = (int)sqrt(w*w + h * h);    //thro的最大值，其实就是图像的对角线距离
+
+	//统计每个待检测点所有的theta和thro，并存在count数组中
+
+
+	//寻找theta_thro对的最大数量，也就是寻找count最大值所对应的theta_thro
+
+	//返回x，y平面，得到一个表达式
+
+
+	//做出示意图
 
 }
