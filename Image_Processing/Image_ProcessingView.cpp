@@ -2963,7 +2963,8 @@ void CImage_ProcessingView::OnHoughlinedetection()
 {
 	// TODO: 在此添加命令处理程序代码
 	
-	if (m_Image.IsNull()) {
+	if (m_Image.IsNull()) 
+	{
 		OnFileOpen();
 	}
 	w = m_Image.GetWidth();
@@ -2971,13 +2972,55 @@ void CImage_ProcessingView::OnHoughlinedetection()
 
 	//TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
 	//而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
-
+	 
+	//转为灰度图
+    const double PI=3.141592;
 	const int min_theta = 0;
 	const int max_theta = 180;
 
 	int max_thro = (int)sqrt(w*w + h * h);    //thro的最大值，其实就是图像的对角线距离
 
+	//动态分配数组
+	int **countArr = new int*[max_theta];
+	for(int i =0;i<max_theta;i++)
+	{
+		countArr[i] = new int[max_thro];
+	}
+	
 	//统计每个待检测点所有的theta和thro，并存在count数组中
+	for (int p_theta = 0; p_theta < max_theta; p_theta++)
+	{
+		for (int q_thro = 0; q_thro < max_thro; q_thro++) {
+
+			//cos_theta与sin_theta
+			double cos_theta,sin_theta;
+			cos_theta = cos(double(PI * p_theta/180));
+			sin_theta = sin(double(PI * p_theta/180));
+
+			for (int i = 0; i < h; i++)
+			{
+				for (int j = 0; j < w; j++)
+				{
+					if (m_Image.m_pBits[0][i][j] == 255)  //已经转为灰度图，因此只考虑B通道
+					{
+						int thro = i * cos_theta + j * sin_theta;
+						if (0 < thro && thro < max_thro) 
+						{
+
+							countArr[p_theta][q_thro]++;
+						}
+
+
+					}
+				}
+			}
+
+		}
+
+	}
+
+
+	
 
 
 	//寻找theta_thro对的最大数量，也就是寻找count最大值所对应的theta_thro
@@ -2986,5 +3029,8 @@ void CImage_ProcessingView::OnHoughlinedetection()
 
 
 	//做出示意图
+
+
+
 
 }
