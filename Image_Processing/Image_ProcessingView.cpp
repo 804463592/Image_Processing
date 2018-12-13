@@ -2786,7 +2786,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 	}
 
-	m_Image.Flag = 0;
+
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
