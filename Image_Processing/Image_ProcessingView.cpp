@@ -2871,7 +2871,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 						rgbArr[k] = new BYTE[m*n];
 					}
 
-
 					for (int p = (int)(1 - m) / 2; p < int((m - 1) / 2 + 1); p++)
 					{
 						for (int q = (int)(1 - n) / 2; q < (int)((n - 1) / 2 + 1); q++)
