@@ -109,6 +109,7 @@ public:
 	afx_msg void OnMaxMinvaluefilter();
 	afx_msg void OnAdaptivemedianfilter();
 	afx_msg void OnGaussiannoise();
+	afx_msg void OnHoughlinedetection();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本

@@ -92,6 +92,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_MaxMinValueFilter, &CImage_ProcessingView::OnMaxMinvaluefilter)
 	ON_COMMAND(ID_AdaptiveMedianFilter, &CImage_ProcessingView::OnAdaptivemedianfilter)
 	ON_COMMAND(ID_GaussianNoise, &CImage_ProcessingView::OnGaussiannoise)
+	ON_COMMAND(ID_HoughLineDetection, &CImage_ProcessingView::OnHoughlinedetection)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -2857,7 +2858,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 		{
 			for (int k = 0; k < 3; k++)  //三个通道,各自单独 处理
 			{
-
 				for (m = m_start, n = n_start; m < m_max + 1, n < n_max + 1; m++, n++)  //m,n从5开始增加,比从3开始增加,效果好一点
 				{
 					//动态分配一个二维数组保存模板内的图像灰度
@@ -2873,7 +2873,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 						{
 							rgbArr[k][hk] = m_Image.m_pBits[k][i + p][j + q];
 							hk++;
-
 						}
 					}
 
@@ -2958,3 +2957,17 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 }
 
+
+
+void CImage_ProcessingView::OnHoughlinedetection()
+{
+	// TODO: 在此添加命令处理程序代码
+	
+	if (m_Image.IsNull()) {
+		OnFileOpen();
+	}
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+
+}
