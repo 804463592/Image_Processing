@@ -1144,7 +1144,7 @@ void CImage_ProcessingView::OnMeanfilter()
 				m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
 			}
 		}
-		
+
 
 		for (int k = 0; k < 3; k++)
 		{
@@ -1169,7 +1169,7 @@ void CImage_ProcessingView::OnMeadianfilter()
 	//注意:中值滤波很耗时
 	// TODO: 在此添加命令处理程序代码
 
-	if (m_Image.IsNull()) 
+	if (m_Image.IsNull())
 	{
 		OnFileOpen();
 		return;
@@ -1205,103 +1205,103 @@ void CImage_ProcessingView::OnMeadianfilter()
 	}
 
 
-		int filter_size = (int)dlg.filterSize;
+	int filter_size = (int)dlg.filterSize;
 
-		//不用在资源视图里面拖控件,直接生成一个进度条
-		CProgressCtrl myProCtrl;
-		CRect rect, proRect;
-		GetClientRect(&rect);
-		proRect.left = rect.left + rect.Width() / 2 - 100;
-		proRect.top = rect.top + rect.Height() / 2 - 10;
-		proRect.right = rect.right - rect.Width() / 2 + 100;
-		proRect.bottom = rect.bottom - rect.Height() / 2 + 10;
-		//WS_CHILD|WS_VISIBLE|PBS_SMOOTHREVERSE
-		//myProCtrl.Create(WS_VISIBLE, proRect, this, 99); //创建位置、大小
-		myProCtrl.Create(WS_CHILD | WS_VISIBLE | PBS_SMOOTHREVERSE, proRect, this, 99); //创建位置、大小
+	//不用在资源视图里面拖控件,直接生成一个进度条
+	CProgressCtrl myProCtrl;
+	CRect rect, proRect;
+	GetClientRect(&rect);
+	proRect.left = rect.left + rect.Width() / 2 - 100;
+	proRect.top = rect.top + rect.Height() / 2 - 10;
+	proRect.right = rect.right - rect.Width() / 2 + 100;
+	proRect.bottom = rect.bottom - rect.Height() / 2 + 10;
+	//WS_CHILD|WS_VISIBLE|PBS_SMOOTHREVERSE
+	//myProCtrl.Create(WS_VISIBLE, proRect, this, 99); //创建位置、大小
+	myProCtrl.Create(WS_CHILD | WS_VISIBLE | PBS_SMOOTHREVERSE, proRect, this, 99); //创建位置、大小
 
-		//三维数组存新图！
-		BYTE *** newImageArr = nullptr;
-		newImageArr = new  BYTE **[3];//3个维度；分配内存  
-		for (int i = 0; i < 3; i++)
+	//三维数组存新图！
+	BYTE *** newImageArr = nullptr;
+	newImageArr = new  BYTE **[3];//3个维度；分配内存  
+	for (int i = 0; i < 3; i++)
+	{
+		newImageArr[i] = new  BYTE*[h];   //先H
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < h; j++)
 		{
-			newImageArr[i] = new  BYTE*[h];   //先H
+			newImageArr[i][j] = new BYTE[w];   //后W
 		}
-		for (int i = 0; i < 3; i++)
+	}
+
+	//暂存数组，求取中值
+	int *B, *G, *R;
+	B = new int[filter_size*filter_size];
+	G = new int[filter_size*filter_size];
+	R = new int[filter_size*filter_size];
+
+	int sz;//数组下标
+
+	for (int j = ((filter_size - 1) / 2); j < h - ((filter_size - 1) / 2); j++)//设定i，j合理的取值范围，防止超出图片范围
+	{
+		for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
 		{
-			for (int j = 0; j < h; j++)
+			sz = 0;
+			for (int k = -((filter_size - 1) / 2); k < (((filter_size - 1) / 2) + 1); k++)//模板内循环
 			{
-				newImageArr[i][j] = new BYTE[w];   //后W
-			}
-		}
-
-		//暂存数组，求取中值
-		int *B, *G, *R;
-		B = new int[filter_size*filter_size];
-		G = new int[filter_size*filter_size];
-		R = new int[filter_size*filter_size];
-
-		int sz;//数组下标
-
-		for (int j = ((filter_size - 1) / 2); j < h - ((filter_size - 1) / 2); j++)//设定i，j合理的取值范围，防止超出图片范围
-		{
-			for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
-			{
-				sz = 0;
-				for (int k = -((filter_size - 1) / 2); k < (((filter_size - 1) / 2) + 1); k++)//模板内循环
+				for (int kk = -((filter_size - 1) / 2); kk < (((filter_size - 1) / 2) + 1); kk++)
 				{
-					for (int kk = -((filter_size - 1) / 2); kk < (((filter_size - 1) / 2) + 1); kk++)
-					{
-						B[sz] = m_Image.m_pBits[0][j + k][i + kk];
-						G[sz] = m_Image.m_pBits[1][j + k][i + kk];
-						R[sz] = m_Image.m_pBits[2][j + k][i + kk];
-						sz++;
-					}
+					B[sz] = m_Image.m_pBits[0][j + k][i + kk];
+					G[sz] = m_Image.m_pBits[1][j + k][i + kk];
+					R[sz] = m_Image.m_pBits[2][j + k][i + kk];
+					sz++;
 				}
-
-				std::sort(B, B + filter_size * filter_size);//sort排序,需要 #include <algorithm>
-				std::sort(G, G + filter_size * filter_size);//因为需要大量的排序,因此速度很慢
-				std::sort(R, R + filter_size * filter_size);
-				newImageArr[0][j][i] = B[(filter_size*filter_size - 1) / 2 + 1];//取中值
-				newImageArr[1][j][i] = G[(filter_size*filter_size - 1) / 2 + 1];
-				newImageArr[2][j][i] = R[(filter_size*filter_size - 1) / 2 + 1];
 			}
 
-			double p;
-			p = (double)j / (double)(h - ((filter_size - 1) / 2));
-			int k = p * 100;
-
-			myProCtrl.SetPos(k);//因为处理速度很慢,故设置进度条显示进度！！
-
+			std::sort(B, B + filter_size * filter_size);//sort排序,需要 #include <algorithm>
+			std::sort(G, G + filter_size * filter_size);//因为需要大量的排序,因此速度很慢
+			std::sort(R, R + filter_size * filter_size);
+			newImageArr[0][j][i] = B[(filter_size*filter_size - 1) / 2 + 1];//取中值
+			newImageArr[1][j][i] = G[(filter_size*filter_size - 1) / 2 + 1];
+			newImageArr[2][j][i] = R[(filter_size*filter_size - 1) / 2 + 1];
 		}
 
-		//将新图赋予源图
-		for (int j = ((filter_size - 1) / 2); j < h - ((filter_size - 1) / 2); j++)//新图是没有初始化的!
+		double p;
+		p = (double)j / (double)(h - ((filter_size - 1) / 2));
+		int k = p * 100;
+
+		myProCtrl.SetPos(k);//因为处理速度很慢,故设置进度条显示进度！！
+
+	}
+
+	//将新图赋予源图
+	for (int j = ((filter_size - 1) / 2); j < h - ((filter_size - 1) / 2); j++)//新图是没有初始化的!
+	{
+		for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
 		{
-			for (int i = ((filter_size - 1) / 2); i < w - ((filter_size - 1) / 2); i++)
-			{
-				m_Image.m_pBits[0][j][i] = newImageArr[0][j][i];
-				m_Image.m_pBits[1][j][i] = newImageArr[1][j][i];
-				m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
-			}
+			m_Image.m_pBits[0][j][i] = newImageArr[0][j][i];
+			m_Image.m_pBits[1][j][i] = newImageArr[1][j][i];
+			m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
 		}
+	}
 
-		//回收指针
+	//回收指针
 
-		for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < h; j++)
 		{
-			for (int j = 0; j < h; j++)
-			{
-				delete[] newImageArr[i][j];//回收内存
-			}
+			delete[] newImageArr[i][j];//回收内存
 		}
-		for (int i = 0; i < 3; i++)
-		{
-			delete[] newImageArr[i];
-		}
-		delete[] newImageArr;
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		delete[] newImageArr[i];
+	}
+	delete[] newImageArr;
 
-		Invalidate(1);
-	
+	Invalidate(1);
+
 }
 
 
@@ -2439,7 +2439,7 @@ void CImage_ProcessingView::OnGaussiannoise()
 			{
 				X = V2 * sqrt(-2 * log(S) / S);
 
-			} 
+			}
 			phase = 1 - phase;
 
 			int g_noise = (int)(mean + sigma * X) *T;
@@ -2774,7 +2774,7 @@ void CImage_ProcessingView::OnMaxMinvaluefilter()
 
 void CImage_ProcessingView::OnAdaptivemedianfilter()
 {
-// TODO: 自适应中值滤波~~~~~~
+	// TODO: 自适应中值滤波~~~~~~
 
 	if (m_Image.IsNull())
 	{
@@ -2796,9 +2796,9 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 	Dlg_AdaptiveMedianFilter dlg;
 	if (IDOK == dlg.DoModal())
 	{
-		while (dlg.n_max % 2 == 0 || dlg.m_max % 2 == 0 || dlg.n_max < 0 || dlg.m_max < 0||
+		while (dlg.n_max % 2 == 0 || dlg.m_max % 2 == 0 || dlg.n_max < 0 || dlg.m_max < 0 ||
 			dlg.n_start % 2 == 0 || dlg.m_start % 2 == 0 || dlg.n_start < 0 || dlg.m_start < 0
-			) 
+			)
 		{
 			MessageBox(L"请输入合法的参数!!!");
 
@@ -2807,7 +2807,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 				UpdateData();
 			}
-			else 
+			else
 			{
 				return;
 			}
@@ -2848,7 +2848,7 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 
 
 	BYTE* z_max = new BYTE[3];//实际上是unsigned char
-	BYTE* z_min = new BYTE[3];  
+	BYTE* z_min = new BYTE[3];
 	BYTE* z_med = new BYTE[3];
 
 	int hk = 0;
@@ -2890,9 +2890,9 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 						delete[]rgbArr[k];
 					}
 					delete[]rgbArr;
-					
+
 					newImageArr[k][i][j] = z_med[k];
-					
+
 					//判断中值是否是噪点
 					if (z_max[k] != z_med[k] && z_min[k] != z_med[k])//B进程开始
 					{
@@ -2962,75 +2962,141 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 void CImage_ProcessingView::OnHoughlinedetection()
 {
 	// TODO: 在此添加命令处理程序代码
-	
-	if (m_Image.IsNull()) 
+
+	if (m_Image.IsNull())
 	{
 		OnFileOpen();
+		return;
 	}
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
+	//考虑最理想的情况，先在图像中生成几个点
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			for (int k = 0; k < 3; k++) {
+
+				m_Image.m_pBits[k][i][j] = 0;
+			}
+		}
+	}
+
+	for (int k = 0; k < 3; k++) {
+		for (int p = 0; p < 50; p += 3) {
+			m_Image.m_pBits[k][1 * p][2 * p] = 255;
+		}
+
+		for (int p = 0; p < 120; p += 3) {
+			m_Image.m_pBits[k][2 * p][3 * p] = 255;
+		}
+
+		for (int p = 0; p < 40; p += 3) {
+			m_Image.m_pBits[k][5 * p][w-3 * p] = 255;
+		}
+	}
+
+	Invalidate(TRUE);
+	MessageBox(L"开始直线检测！");
+
 	//TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
 	//而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
-	 
+
 	//转为灰度图
-    const double PI=3.141592;
+	const double PI = 3.141592;
 	const int min_theta = 0;
 	const int max_theta = 180;
 
 	int max_thro = (int)sqrt(w*w + h * h);    //thro的最大值，其实就是图像的对角线距离
 
 	//动态分配数组
-	int **countArr = new int*[max_theta];
-	for(int i =0;i<max_theta;i++)
+	int **countArr = new int*[sizeof(int) * max_theta];
+	for (int i = 0; i < max_theta; i++)
 	{
-		countArr[i] = new int[max_thro];
+		countArr[i] = new int[sizeof(int) * max_thro];
+		memset(countArr[i], 0, sizeof(int)*max_thro); //初始化
 	}
-	
+
+
 	//统计每个待检测点所有的theta和thro，并存在count数组中
 	for (int p_theta = 0; p_theta < max_theta; p_theta++)
 	{
-		for (int q_thro = 0; q_thro < max_thro; q_thro++) {
+		//cos_theta与sin_theta
+		double cos_theta, sin_theta;
+		cos_theta = cos(double(PI * p_theta / 180));
+		sin_theta = sin(double(PI * p_theta / 180));
 
-			//cos_theta与sin_theta
-			double cos_theta,sin_theta;
-			cos_theta = cos(double(PI * p_theta/180));
-			sin_theta = sin(double(PI * p_theta/180));
-
-			for (int i = 0; i < h; i++)
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
 			{
-				for (int j = 0; j < w; j++)
+				if (m_Image.m_pBits[0][i][j] == 255)  //已经转为灰度图，因此只考虑B通道
 				{
-					if (m_Image.m_pBits[0][i][j] == 255)  //已经转为灰度图，因此只考虑B通道
+					int thro = int(i * cos_theta + j * sin_theta);
+					if (0 < thro && thro < max_thro)
 					{
-						int thro = i * cos_theta + j * sin_theta;
-						if (0 < thro && thro < max_thro) 
-						{
-
-							countArr[p_theta][q_thro]++;
-						}
-
-
+						countArr[p_theta][thro]++;
 					}
 				}
+			}
+		}
+	}
+
+	//寻找theta_thro对的最大数量，也就是寻找count最大值所对应的theta_thro
+	//int	max_count = countArr[0][0];
+	std::vector<int> v_theta(0);  //存储找到的直线所对应的参数
+	std::vector<int> v_thro(0);
+	//int theta = 0;
+	//int thro = 0;
+	for (int i = min_theta; i < max_theta; i++)
+	{
+		for (int j = 0; j < max_thro; j++)
+		{
+			if (countArr[i][j] > 5)  //超过5个点连在一起，则认为是一条直线
+			{
+				v_theta.push_back(i);
+				v_thro.push_back(j);
 			}
 
 		}
 
 	}
 
+	//返回x，y平面，得到所有直线的表达式, 并遍历图像上每个点，判断是否在各直线上，并画出直线
+	std::vector<int>::iterator iter1, iter2;
+	for (iter1 = v_theta.begin(), iter2 = v_thro.begin(); iter1 != v_theta.end(), iter2 != v_thro.end(); iter1++, iter2++)
+	{
+		double costheta = cos(double(PI * (*iter1) / 180));
+		double sintheta = sin(double(PI * (*iter1 )/ 180));
 
+		//BYTE b = rand() % 255;
+		//BYTE g = rand() % 255;
+		//BYTE r = rand() % 255;
+
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				if (*iter2 == int(i * costheta + j * sintheta)) {
+					m_Image.m_pBits[0][i][j] = 240;  //彩色
+					m_Image.m_pBits[1][i][j] = 120;
+					m_Image.m_pBits[2][i][j] = 40;
+
+				}
+			}
+
+		}
+
+	}
+	//释放动态数组countArr
+	for (int i = 0; i < max_theta; i++)
+	{		
+		delete []countArr[i];
+	}
 	
+	delete []countArr;
 
 
-	//寻找theta_thro对的最大数量，也就是寻找count最大值所对应的theta_thro
-
-	//返回x，y平面，得到一个表达式
-
-
-	//做出示意图
-
-
-
-
+	Invalidate(TRUE);
 }
