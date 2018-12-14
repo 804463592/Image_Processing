@@ -93,6 +93,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_AdaptiveMedianFilter, &CImage_ProcessingView::OnAdaptivemedianfilter)
 	ON_COMMAND(ID_GaussianNoise, &CImage_ProcessingView::OnGaussiannoise)
 	ON_COMMAND(ID_HoughLineDetection, &CImage_ProcessingView::OnHoughlinedetection)
+	ON_COMMAND(ID_SobleGrad, &CImage_ProcessingView::OnSoblegrad)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -2958,7 +2959,6 @@ void CImage_ProcessingView::OnAdaptivemedianfilter()
 }
 
 
-
 void CImage_ProcessingView::OnHoughlinedetection()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -2971,20 +2971,7 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
-	//分配数组内存
-	BYTE *** newImageArray = new BYTE**[3];
-	for (int i = 0; i < 3; i++) {
-
-		newImageArray[i] = new BYTE*[h];
-		for (int j = 0; j < h; j++) {
-
-			newImageArray[i][j] = new BYTE[w];
-			memset(newImageArray[i][j], 0, sizeof(BYTE)*w);
-		}
-
-	}
-
-	////考虑最理想的情况，先将图像全部置零
+	//考虑最理想的情况，先将图像全部置零
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
@@ -3015,7 +3002,7 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	}
 	////给出四条待检测的直线
 	for (int k = 0; k < 3; k++) {
-		for (int p =10; p < 60; p+=3) {
+		for (int p =10; p < int(h/10); p+=3) {
 
 			m_Image.m_pBits[k][1 * p][2 * p] = 255;
 
@@ -3027,12 +3014,13 @@ void CImage_ProcessingView::OnHoughlinedetection()
 
 		}		
 	}
-
 	Invalidate(TRUE);
+
+
 	MessageBox(L"开始直线检测！");
 
-	//TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
-	//而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
+	////TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
+	////而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
 
 	const double PI = 3.141592;
 	const int min_theta = 0;
@@ -3089,13 +3077,13 @@ void CImage_ProcessingView::OnHoughlinedetection()
 		}
 
 	}
-	 
+
 	//返回x，y平面，得到所有直线的表达式, 并遍历图像上每个点，判断是否在各直线上，并画出直线
 	std::vector<int>::iterator iter1, iter2;
 	for (iter1 = v_theta.begin(), iter2 = v_thro.begin(); iter1 != v_theta.end(), iter2 != v_thro.end(); iter1++, iter2++)
 	{
 		double costheta = cos(double(PI * (*iter1) / 180));
-		double sintheta = sin(double(PI * (*iter1 )/ 180));
+		double sintheta = sin(double(PI * (*iter1) / 180));
 
 		BYTE b = rand() % 255;
 		BYTE g = rand() % 255;
@@ -3105,7 +3093,7 @@ void CImage_ProcessingView::OnHoughlinedetection()
 		{
 			for (int j = 0; j < w; j++)
 			{
-				if (*iter2 == int(i * costheta + j * sintheta)) 
+				if (*iter2 == int(i * costheta + j * sintheta))
 				{
 					m_Image.m_pBits[0][i][j] = b;  //彩色
 					m_Image.m_pBits[1][i][j] = g;
@@ -3118,13 +3106,98 @@ void CImage_ProcessingView::OnHoughlinedetection()
 
 	//释放动态数组countArr
 	for (int i = 0; i < max_theta; i++)
-	{		
-		delete []countArr[i];
+	{
+		delete[]countArr[i];
 		countArr[i] = NULL;
 	}
-	
-	delete []countArr;
+
+	delete[]countArr;
 	countArr = NULL;
 
+	Invalidate(TRUE);
+
+}
+
+
+void CImage_ProcessingView::OnSoblegrad()
+{
+	// TODO: 在此添加命令处理程序代码
+
+	if (m_Image.IsNull())
+	{
+		OnFileOpen();
+		return;
+	}
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+	MessageBox(_T("将会取灰度图!"));
+	OnTogrey();
+	//MessageBox(_T("将会调用平滑函数~!"));
+	//均值平滑
+	//OnMeanfilter();
+
+	//边缘检测,为了简单,先考虑prewitt算子
+	//分配数组内存
+	MessageBox(_T("将会边缘检测!"));
+	BYTE *** newImageArr = new BYTE**[3];
+	for (int i = 0; i < 3; i++)
+	{
+		newImageArr[i] = new BYTE*[h];
+		for (int j = 0; j < h; j++)
+		{
+			newImageArr[i][j] = new BYTE[w];
+			memset(newImageArr[i][j], 0, sizeof(BYTE)*w);
+		}
+	}
+	for (int i = 1; i < h - 1; i++) {
+		for (int j = 1; j < w - 1; j++)
+		{
+			for (int k = 0; k < 3; k++) {
+
+				int gx = (m_Image.m_pBits[k][i + 1][j - 1] + 2 * m_Image.m_pBits[k][i + 1][j] + m_Image.m_pBits[k][i + 1][j + 1]) -
+					(m_Image.m_pBits[k][i - 1][j - 1] + 2 * m_Image.m_pBits[k][i - 1][j] + m_Image.m_pBits[k][i - 1][j + 1]);
+				int gy = (m_Image.m_pBits[k][i - 1][j + 1] + 2 * m_Image.m_pBits[k][i][j + 1] + m_Image.m_pBits[k][i + 1][j + 1]) -
+					(m_Image.m_pBits[k][i - 1][j - 1] + 2 * m_Image.m_pBits[k][i][j - 1] + m_Image.m_pBits[k][i + 1][j - 1]);
+				if (abs(gx) + abs(gy) < 255)
+				{
+					newImageArr[k][i][j] = abs(gx) + abs(gy);
+				}
+				else {
+					newImageArr[k][i][j] = 255;
+				}
+			}
+		}
+	}
+	//将新图赋予源图
+	for (int j = 1; j < h - 1; j++)//新图是没有初始化的!
+	{
+		for (int i = 1; i < w - 1; i++)
+		{
+			m_Image.m_pBits[0][j][i] = newImageArr[0][j][i];
+			m_Image.m_pBits[1][j][i] = newImageArr[1][j][i];
+			m_Image.m_pBits[2][j][i] = newImageArr[2][j][i];
+		}
+	}
+	Invalidate(TRUE);
+
+	//二值化
+	MessageBox(_T("将会0~255二值化!"));
+	for (int j = 0; j < h; j++)//新图是没有初始化的!
+	{
+		for (int i = 0; i < w; i++)
+		{
+			for (int k = 0; k < 3; k++) {
+
+				if (m_Image.m_pBits[k][j][i] > 128) {
+					m_Image.m_pBits[k][j][i] = 255;
+				}
+				else {
+					m_Image.m_pBits[k][j][i] = 0;
+				}
+
+			}
+
+		}
+	}
 	Invalidate(TRUE);
 }

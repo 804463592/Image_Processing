@@ -147,13 +147,15 @@
 #define ID_32838                        32838
 #define ID_HoffLineDetection            32839
 #define ID_HoughLineDetection           32840
+#define ID_32841                        32841
+#define ID_SobleGrad                    32842
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        343
-#define _APS_NEXT_COMMAND_VALUE         32841
+#define _APS_NEXT_COMMAND_VALUE         32843
 #define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
