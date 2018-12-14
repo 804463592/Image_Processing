@@ -14,7 +14,7 @@ MyImage_::~MyImage_(void)
 	if ( m_pBits!=NULL)
 	{
 		int h=m_CImage.GetHeight();
-		for   (int   i=0;   i<2;   i++)   
+		for   (int   i=0;   i<3;   i++)     //这个框架这里,可能是出于防止多次delete???/,原来这里是i<2
 		{          
 			for   (int   j=0;   j<h;   j++)         
 			{   
@@ -23,7 +23,7 @@ MyImage_::~MyImage_(void)
 				m_pBits[i][j]=NULL;
 			}
 		}
-		for (int   i=0;   i<2;   i++)
+		for (int   i=0;   i<3;   i++)//这个框架这里,可能是出于防止多次delete???/,原来这里是i<2
 		{
 			delete[] m_pBits[i];  
 			m_pBits[i]=NULL;

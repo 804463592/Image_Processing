@@ -2971,30 +2971,61 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
-	//考虑最理想的情况，先在图像中生成几个点
+	//分配数组内存
+	BYTE *** newImageArray = new BYTE**[3];
+	for (int i = 0; i < 3; i++) {
+
+		newImageArray[i] = new BYTE*[h];
+		for (int j = 0; j < h; j++) {
+
+			newImageArray[i][j] = new BYTE[w];
+			memset(newImageArray[i][j], 0, sizeof(BYTE)*w);
+		}
+
+	}
+
+	////考虑最理想的情况，先将图像全部置零
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
 		{
-			for (int k = 0; k < 3; k++) {
+			int x = rand() % h;
+			int y = rand() % w;
+			if ((rand() % 3000) > 1)    //置零,但添加一定的噪声
+			{
+			    for (int k = 0; k < 3; k++)
+			    {
 
 				m_Image.m_pBits[k][i][j] = 0;
+
+				}
+
+			}
+			else  //以一定概率加以一些噪声,噪声概率仅为1/3000
+			{
+				for (int k = 0; k < 3; k++)
+				{
+
+					m_Image.m_pBits[k][i][j] = 255;
+
+				}
+				
 			}
 		}
 	}
-
+	////给出四条待检测的直线
 	for (int k = 0; k < 3; k++) {
-		for (int p = 0; p < 50; p += 3) {
+		for (int p =10; p < 60; p+=3) {
+
 			m_Image.m_pBits[k][1 * p][2 * p] = 255;
-		}
 
-		for (int p = 0; p < 120; p += 3) {
-			m_Image.m_pBits[k][2 * p][3 * p] = 255;
-		}
+			m_Image.m_pBits[k][4 * p][2 * p] = 255;
+			
+			m_Image.m_pBits[k][7*p][w-p-10] = 255;//注意别越界
 
-		for (int p = 0; p < 40; p += 3) {
-			m_Image.m_pBits[k][5 * p][w-3 * p] = 255;
-		}
+			m_Image.m_pBits[k][5 * p][w-2 * p] = 255;//这里一定注意啊,w-2*p当p从0开始增加时,w-2*p =w,这就越界了
+
+		}		
 	}
 
 	Invalidate(TRUE);
@@ -3003,7 +3034,6 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	//TODO：先假设待检测图像为0和255的2值图像，0为背景，255为待检测点，而且我们也暂时只考虑检测一条最长的直线
 	//而且只是存在一些散点，后面再考虑加入梯度检测，去噪，二值化等
 
-	//转为灰度图
 	const double PI = 3.141592;
 	const int min_theta = 0;
 	const int max_theta = 180;
@@ -3017,7 +3047,6 @@ void CImage_ProcessingView::OnHoughlinedetection()
 		countArr[i] = new int[sizeof(int) * max_thro];
 		memset(countArr[i], 0, sizeof(int)*max_thro); //初始化
 	}
-
 
 	//统计每个待检测点所有的theta和thro，并存在count数组中
 	for (int p_theta = 0; p_theta < max_theta; p_theta++)
@@ -3036,7 +3065,7 @@ void CImage_ProcessingView::OnHoughlinedetection()
 					int thro = int(i * cos_theta + j * sin_theta);
 					if (0 < thro && thro < max_thro)
 					{
-						countArr[p_theta][thro]++;
+						countArr[p_theta][thro]++;  //统计直线的参数
 					}
 				}
 			}
@@ -3044,25 +3073,23 @@ void CImage_ProcessingView::OnHoughlinedetection()
 	}
 
 	//寻找theta_thro对的最大数量，也就是寻找count最大值所对应的theta_thro
-	//int	max_count = countArr[0][0];
+
 	std::vector<int> v_theta(0);  //存储找到的直线所对应的参数
 	std::vector<int> v_thro(0);
-	//int theta = 0;
-	//int thro = 0;
+
 	for (int i = min_theta; i < max_theta; i++)
 	{
 		for (int j = 0; j < max_thro; j++)
 		{
-			if (countArr[i][j] > 5)  //超过5个点连在一起，则认为是一条直线
+			if (countArr[i][j] > 6)  //超过6个点连在一起，则认为是一条直线
 			{
 				v_theta.push_back(i);
 				v_thro.push_back(j);
 			}
-
 		}
 
 	}
-
+	 
 	//返回x，y平面，得到所有直线的表达式, 并遍历图像上每个点，判断是否在各直线上，并画出直线
 	std::vector<int>::iterator iter1, iter2;
 	for (iter1 = v_theta.begin(), iter2 = v_thro.begin(); iter1 != v_theta.end(), iter2 != v_thro.end(); iter1++, iter2++)
@@ -3070,33 +3097,34 @@ void CImage_ProcessingView::OnHoughlinedetection()
 		double costheta = cos(double(PI * (*iter1) / 180));
 		double sintheta = sin(double(PI * (*iter1 )/ 180));
 
-		//BYTE b = rand() % 255;
-		//BYTE g = rand() % 255;
-		//BYTE r = rand() % 255;
+		BYTE b = rand() % 255;
+		BYTE g = rand() % 255;
+		BYTE r = rand() % 255;
 
 		for (int i = 0; i < h; i++)
 		{
 			for (int j = 0; j < w; j++)
 			{
-				if (*iter2 == int(i * costheta + j * sintheta)) {
-					m_Image.m_pBits[0][i][j] = 240;  //彩色
-					m_Image.m_pBits[1][i][j] = 120;
-					m_Image.m_pBits[2][i][j] = 40;
+				if (*iter2 == int(i * costheta + j * sintheta)) 
+				{
+					m_Image.m_pBits[0][i][j] = b;  //彩色
+					m_Image.m_pBits[1][i][j] = g;
+					m_Image.m_pBits[2][i][j] = r;
 
 				}
 			}
-
 		}
-
 	}
+
 	//释放动态数组countArr
 	for (int i = 0; i < max_theta; i++)
 	{		
 		delete []countArr[i];
+		countArr[i] = NULL;
 	}
 	
 	delete []countArr;
-
+	countArr = NULL;
 
 	Invalidate(TRUE);
 }
