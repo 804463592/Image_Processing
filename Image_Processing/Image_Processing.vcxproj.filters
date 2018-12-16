@@ -114,6 +114,12 @@
     <ClInclude Include="Dlg_GaussianNoise.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Dlg_ShowRGB.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dlg_RgbToHSI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image_Processing.cpp">
@@ -186,6 +192,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Dlg_GaussianNoise.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Dlg_ShowRGB.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Dlg_RgbToHSI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
