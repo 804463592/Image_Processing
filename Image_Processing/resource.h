@@ -47,6 +47,7 @@
 #define IDD_Dlg_AdaptiveMedianFilter    339
 #define IDD_Dlg_GaussianNoise           341
 #define IDD_Dlg_ShowRGB                 343
+#define IDD_Dlg_RgbToHSI                345
 #define IDC_TIMES1                      1002
 #define IDC_EDIT1                       1003
 #define IDC_EDIT_GetFIlterSize          1004
@@ -85,8 +86,11 @@
 #define IDC_EDIT_GaussianFilter_mean    1044
 #define IDC_CHECK_B                     1048
 #define IDC_CHECK_G                     1049
-#define IDC_CHECK3                      1050
 #define IDC_CHECK_R                     1050
+#define IDC_RADIO_H                     1051
+#define IDC_RADIO_S                     1052
+#define IDC_RADIO3                      1053
+#define IDC_RADIO_I                     1053
 #define ID_SHOWRED                      32773
 #define IDM_DRAWLINE                    32774
 #define IDM_SHOWRED                     32775
@@ -156,14 +160,16 @@
 #define ID_SobleGrad                    32842
 #define ID_32843                        32843
 #define ID_ShowRGB                      32844
+#define ID_32845                        32845
+#define ID_RGBToHSI                     32846
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        345
-#define _APS_NEXT_COMMAND_VALUE         32845
-#define _APS_NEXT_CONTROL_VALUE         1051
+#define _APS_NEXT_RESOURCE_VALUE        347
+#define _APS_NEXT_COMMAND_VALUE         32847
+#define _APS_NEXT_CONTROL_VALUE         1054
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
 #endif

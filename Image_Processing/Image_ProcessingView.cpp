@@ -36,13 +36,14 @@
 #include "Dlg_ContraHarmonicMeanFilter.h"   //逆谐波滤波器
 
 #include <vector>  //产生噪声时用到vector
-//using namespace std;
+using namespace std;
 #include "Dlg_SaltPepperNoise.h"
 
 #include "Dlg_MaxMinValueFilter.h"
 #include "Dlg_AdaptiveMedianFilter.h"
 #include "Dlg_GaussianNoise.h"
 #include "Dlg_ShowRGB.h"
+#include "Dlg_RgbToHSI.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -96,6 +97,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_HoughLineDetection, &CImage_ProcessingView::OnHoughlinedetection)
 	ON_COMMAND(ID_SobleGrad, &CImage_ProcessingView::OnSoblegrad)
 	ON_COMMAND(ID_ShowRGB, &CImage_ProcessingView::OnShowrgb)
+	ON_COMMAND(ID_RGBToHSI, &CImage_ProcessingView::OnRgbtohsi)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -2982,10 +2984,10 @@ void CImage_ProcessingView::OnHoughlinedetection()
 			int y = rand() % w;
 			if ((rand() % 3000) > 1)    //置零,但添加一定的噪声
 			{
-			    for (int k = 0; k < 3; k++)
-			    {
+				for (int k = 0; k < 3; k++)
+				{
 
-				m_Image.m_pBits[k][i][j] = 0;
+					m_Image.m_pBits[k][i][j] = 0;
 
 				}
 
@@ -2998,23 +3000,23 @@ void CImage_ProcessingView::OnHoughlinedetection()
 					m_Image.m_pBits[k][i][j] = 255;
 
 				}
-				
+
 			}
 		}
 	}
 	////给出四条待检测的直线
 	for (int k = 0; k < 3; k++) {
-		for (int p =10; p < int(h/10); p+=3) {
+		for (int p = 10; p < int(h / 10); p += 3) {
 
 			m_Image.m_pBits[k][1 * p][2 * p] = 255;
 
 			m_Image.m_pBits[k][4 * p][2 * p] = 255;
-			
-			m_Image.m_pBits[k][7*p][w-p-10] = 255;//注意别越界
 
-			m_Image.m_pBits[k][5 * p][w-2 * p] = 255;//这里一定注意啊,w-2*p当p从0开始增加时,w-2*p =w,这就越界了
+			m_Image.m_pBits[k][7 * p][w - p - 10] = 255;//注意别越界
 
-		}		
+			m_Image.m_pBits[k][5 * p][w - 2 * p] = 255;//这里一定注意啊,w-2*p当p从0开始增加时,w-2*p =w,这就越界了
+
+		}
 	}
 	Invalidate(TRUE);
 
@@ -3216,7 +3218,7 @@ void CImage_ProcessingView::OnShowrgb()
 
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
-	 
+
 	//恢复下原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
 	for (int k = 0; k < 3; k++)
 	{
@@ -3232,6 +3234,7 @@ void CImage_ProcessingView::OnShowrgb()
 	BOOL B_check(1), G_check(1), R_check(1);
 	Dlg_ShowRGB dlg;
 	if (IDOK == dlg.DoModal()) {
+
 		B_check = dlg.b_check;
 		G_check = dlg.g_check;
 		R_check = dlg.r_check;
@@ -3253,4 +3256,159 @@ void CImage_ProcessingView::OnShowrgb()
 	}
 
 	Invalidate(TRUE);
+}
+
+
+void CImage_ProcessingView::OnRgbtohsi()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (m_Image.IsNull()) {
+
+		OnFileOpen();
+		return;
+	}
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+	BOOL h_check(0), s_check(0), i_check(0);
+	Dlg_RgbToHSI dlg;
+	if (IDOK == dlg.DoModal()) {
+
+		h_check = dlg.H;
+		s_check = dlg.S;
+		i_check = dlg.I;
+	}
+	else {
+		return;
+	}
+
+
+	//恢复下原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
+	for (int k = 0; k < 3; k++)
+	{
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[k][i][j] = m_Imagecp.m_pBits[k][i][j];
+			}
+		}
+	}
+
+	BYTE *** newImageArr = new BYTE**[3];
+	for (int k = 0; k < 3; k++) {
+		newImageArr[k] = new BYTE*[h];
+		for (int i = 0; i < h; i++) {
+
+			newImageArr[k][i] = new BYTE[w];
+
+		}
+	}
+
+
+	BYTE R(0), G(0), B(0);
+	BYTE H(0), S(0), I(0);
+
+	const double PI = 3.141593;
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+
+			B = m_Image.m_pBits[0][i][j];
+			G = m_Image.m_pBits[1][i][j];
+			R = m_Image.m_pBits[2][i][j];
+
+			double theta = acos(0.5*(2 * R - B - G) / sqrt((R - G)*(R - G) + (R - B)*(R - B) + (G - B)*(G - B)));
+			if (B <= G)
+			{
+				H = BYTE((theta / (2 * PI)) * 255);
+			}
+			else
+			{
+				H = BYTE(((2*PI-theta) / (2 * PI)) * 255);
+			}
+
+			vector<BYTE> rgb;
+			rgb.push_back(R);
+			rgb.push_back(G);
+			rgb.push_back(B);
+			BYTE minvalue = *min_element(rgb.begin(), rgb.end());
+	
+
+			S = (1 - 3 * (minvalue) / (R + B + G + 0.0003)) * 255;
+
+			I = BYTE((R + B + G) / 3);
+
+			newImageArr[0][i][j] = H;
+			newImageArr[1][i][j] = S;
+			newImageArr[2][i][j] = I;
+
+		}
+
+	}
+
+	if (h_check == 1) {  //H
+		//将新图赋予源图
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[0][i][j] = newImageArr[0][i][j];
+				m_Image.m_pBits[1][i][j] = newImageArr[0][i][j];
+				m_Image.m_pBits[2][i][j] = newImageArr[0][i][j];
+				
+			}
+		}
+	}
+	else if(s_check ==1){ //S
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[0][i][j] = newImageArr[1][i][j];
+				m_Image.m_pBits[1][i][j] = newImageArr[1][i][j];
+				m_Image.m_pBits[2][i][j] = newImageArr[1][i][j];
+
+			}
+		}
+	
+	}
+	else if (i_check == 1) { //I
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[0][i][j] = newImageArr[2][i][j];
+				m_Image.m_pBits[1][i][j] = newImageArr[2][i][j];
+				m_Image.m_pBits[2][i][j] = newImageArr[2][i][j];
+
+			}
+		}
+
+	}
+	else {
+		//do nothing 
+	}
+
+	
+
+	//回收指针
+
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < h; j++)
+		{
+			delete[] newImageArr[i][j];//回收内存
+		}
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		delete[] newImageArr[i];
+	}
+	delete[] newImageArr;
+
+	Invalidate(1);
+
 }

@@ -119,6 +119,7 @@
     <ClInclude Include="Dlg_HarmonicFilter.h" />
     <ClInclude Include="Dlg_LowPassParameter.h" />
     <ClInclude Include="Dlg_MaxMinValueFilter.h" />
+    <ClInclude Include="Dlg_RgbToHSI.h" />
     <ClInclude Include="Dlg_SaltPepperNoise.h" />
     <ClInclude Include="Dlg_ShowRGB.h" />
     <ClInclude Include="DownTimes.h" />
@@ -148,6 +149,7 @@
     <ClCompile Include="Dlg_HarmonicFilter.cpp" />
     <ClCompile Include="Dlg_LowPassParameter.cpp" />
     <ClCompile Include="Dlg_MaxMinValueFilter.cpp" />
+    <ClCompile Include="Dlg_RgbToHSI.cpp" />
     <ClCompile Include="Dlg_SaltPepperNoise.cpp" />
     <ClCompile Include="Dlg_ShowRGB.cpp" />
     <ClCompile Include="DownTimes.cpp" />

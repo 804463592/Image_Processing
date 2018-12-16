@@ -112,6 +112,7 @@ public:
 	afx_msg void OnHoughlinedetection();
 	afx_msg void OnSoblegrad();
 	afx_msg void OnShowrgb();
+	afx_msg void OnRgbtohsi();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本
