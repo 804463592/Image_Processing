@@ -113,6 +113,8 @@ public:
 	afx_msg void OnSoblegrad();
 	afx_msg void OnShowrgb();
 	afx_msg void OnRgbtohsi();
+	afx_msg void OnRgbHistBalance();
+	afx_msg void OnHsiHistBalance();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本

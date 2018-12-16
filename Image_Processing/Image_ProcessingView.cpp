@@ -98,6 +98,8 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_SobleGrad, &CImage_ProcessingView::OnSoblegrad)
 	ON_COMMAND(ID_ShowRGB, &CImage_ProcessingView::OnShowrgb)
 	ON_COMMAND(ID_RGBToHSI, &CImage_ProcessingView::OnRgbtohsi)
+	ON_COMMAND(ID_RGB_Hist_Balance, &CImage_ProcessingView::OnRgbHistBalance)
+	ON_COMMAND(ID_HSI_Hist_Balance, &CImage_ProcessingView::OnHsiHistBalance)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -3411,4 +3413,217 @@ void CImage_ProcessingView::OnRgbtohsi()
 
 	Invalidate(1);
 
+}
+
+
+void CImage_ProcessingView::OnRgbHistBalance()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (m_Image.IsNull()) 
+	{
+		OnFileOpen();
+	
+		return;
+	}
+
+	m_Image.Flag = 4;	//恢复FLAG为4,以对比的特殊方式显示
+
+	m_Image.GetHistgram();//获取概率直方图统计,保存在m_Image.probability数组中
+
+	long i, j;		//循环计数
+	BYTE pixel1, pixel2, pixel3;		//像素值
+
+	float temp[3][256];
+	int   nRst[3][256];//映射表
+	int nrow = m_Image.m_CImage.GetPitch();//获得m_CImage每一行像素的RGB所占用的存储空间的大小
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+
+	for (i = 0; i < 256; i++)
+	{
+
+		if (0 == i)
+		{
+			temp[0][0] = m_Image.probability[0][0];
+			temp[1][0] = m_Image.probability[1][0];
+			temp[2][0] = m_Image.probability[2][0];
+
+		}
+		else
+		{
+			temp[0][i] = temp[0][i - 1] + m_Image.probability[0][i];  //r通道,累积像素函数temp中的是概率,小于1的
+			temp[1][i] = temp[1][i - 1] + m_Image.probability[0][i];  //g通道,累积像素函数
+			temp[2][i] = temp[2][i - 1] + m_Image.probability[0][i];  //b通道,累积像素函数
+		}
+	}
+
+	for (i = 0; i < 256; i++)
+	{
+		nRst[0][i] = (int)(255.0f * temp[0][i] + 0.5f);      //nRst[i],直方图均衡灰度变换映射
+		nRst[1][i] = (int)(255.0f * temp[1][i] + 0.5f);
+		nRst[2][i] = (int)(255.0f * temp[2][i] + 0.5f);
+
+	}
+
+	for (j = 0; j < h; j++)
+	{
+		for (i = 0; i < w; i++)
+		{
+			pixel1 = m_Image.m_pBits[0][j][i];
+			pixel2 = m_Image.m_pBits[1][j][i];
+			pixel3 = m_Image.m_pBits[2][j][i];
+
+			m_Image.m_pBits[0][j][i] = (BYTE)(nRst[0][pixel1]);
+			m_Image.m_pBits[1][j][i] = (BYTE)(nRst[1][pixel2]);
+			m_Image.m_pBits[2][j][i] = (BYTE)(nRst[2][pixel3]);
+			//各通道单独均衡化,最后显示会失真
+			//彩色图像均衡化,可以转到HSI空间进行
+
+		}
+	}
+
+	m_Imagecp.X = 100;            //给出绘图位置,对比处理的效果
+	m_Imagecp.Y = 100;
+	m_Image.X = m_Imagecp.X + 10 + m_Imagecp.GetWidth();
+	m_Image.Y = m_Imagecp.Y;
+
+	Invalidate(1);
+
+}
+
+
+void CImage_ProcessingView::OnHsiHistBalance()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (m_Image.IsNull()) {
+
+		OnFileOpen();
+		return;
+	}
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+	//恢复下原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
+	for (int k = 0; k < 3; k++)
+	{
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[k][i][j] = m_Imagecp.m_pBits[k][i][j];
+			}
+		}
+	}
+
+
+	BYTE *** newImageArr = new BYTE**[3];
+	for (int k = 0; k < 3; k++) {
+		newImageArr[k] = new BYTE*[h];
+		for (int i = 0; i < h; i++) {
+
+			newImageArr[k][i] = new BYTE[w];
+
+		}
+	}
+
+	//转换到HSI空间
+	BYTE R(0), G(0), B(0);
+	BYTE H(0), S(0), I(0);
+
+	const double PI = 3.141593;
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+
+			B = m_Image.m_pBits[0][i][j];
+			G = m_Image.m_pBits[1][i][j];
+			R = m_Image.m_pBits[2][i][j];
+
+			double theta = acos(0.5*(2 * R - B - G) / sqrt((R - G)*(R - G) + (R - B)*(R - B) + (G - B)*(G - B)));
+			if (B <= G)
+			{
+				H = BYTE((theta / (2 * PI)) * 255);
+			}
+			else
+			{
+				H = BYTE(((2 * PI - theta) / (2 * PI)) * 255);
+			}
+
+			vector<BYTE> rgb;
+			rgb.push_back(R);
+			rgb.push_back(G);
+			rgb.push_back(B);
+			BYTE minvalue = *min_element(rgb.begin(), rgb.end());
+
+
+			S = (1 - 3 * (minvalue) / (R + B + G + 0.0003)) * 255;
+
+			I = BYTE((R + B + G) / 3);
+
+			newImageArr[0][i][j] = H;
+			newImageArr[1][i][j] = S;
+			newImageArr[2][i][j] = I;
+
+		}
+
+	}
+
+	//显示
+	//for (int i = 0; i < h; i++)
+	//{
+	//	for (int j = 0; j < w; j++)
+	//	{
+	//		m_Image.m_pBits[0][i][j] = newImageArr[0][i][j];
+	//		m_Image.m_pBits[1][i][j] = newImageArr[1][i][j];
+	//		m_Image.m_pBits[2][i][j] = newImageArr[2][i][j];
+
+	//	}
+	//}
+
+	//统计I分量上的概率分布
+	int gray_hist[256] = {0};  //先将第一个元素赋值为0,后面各元素默认为0
+	double prob[256] = {0};
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			gray_hist[newImageArr[2][i][j]]++;
+		}
+	}
+	for (int i = 0; i < 256; i++) {
+		prob[i] = double(gray_hist[i]) /double(w*h);
+	}
+
+	//计算累积概率函数
+	double cum_dst[256] = { 0 };
+	for (int i = 0; i < 256; i++) {
+
+		if (0 == i) {
+
+			cum_dst[i] = prob[i];
+		}
+		else {
+
+			cum_dst[i] = cum_dst[i - 1] + prob[i];
+
+		}
+	}
+
+	//I分量灰度级映射
+	BYTE gray_map[256] = { 0 };
+	for (int i = 0; i < 256; i++) {
+
+		gray_map[i] = BYTE(i*cum_dst[i]);
+	}
+
+
+
+
+
+
+	Invalidate(1);
 }
