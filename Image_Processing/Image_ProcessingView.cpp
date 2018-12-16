@@ -1417,6 +1417,7 @@ void CImage_ProcessingView::OnFft()
 			Ftmp[i][j] = dTmp;
 		}
 	}
+
 	double maxx = 0;
 	double v = 2;//底数
 	///////////////进行对数变换///////////////////
@@ -3580,7 +3581,6 @@ void CImage_ProcessingView::OnHsiHistBalance()
 	//		m_Image.m_pBits[0][i][j] = newImageArr[0][i][j];
 	//		m_Image.m_pBits[1][i][j] = newImageArr[1][i][j];
 	//		m_Image.m_pBits[2][i][j] = newImageArr[2][i][j];
-
 	//	}
 	//}
 
@@ -3613,12 +3613,25 @@ void CImage_ProcessingView::OnHsiHistBalance()
 		}
 	}
 
-	//I分量灰度级映射
+	//I分量灰度级映射,即只对I分量均衡化
 	BYTE gray_map[256] = { 0 };
 	for (int i = 0; i < 256; i++) {
 
-		gray_map[i] = BYTE(i*cum_dst[i]);
+		gray_map[i] = BYTE(255*cum_dst[i]);
+
 	}
+
+	//将修改后的I分量保存在newImageArr中
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+				newImageArr[2][i][j] = gray_map[newImageArr[2][i][j]];
+		}
+
+	}
+
+	//从HSI转到RGB
+
+
 
 
 
