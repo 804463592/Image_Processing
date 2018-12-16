@@ -42,6 +42,7 @@
 #include "Dlg_MaxMinValueFilter.h"
 #include "Dlg_AdaptiveMedianFilter.h"
 #include "Dlg_GaussianNoise.h"
+#include "Dlg_ShowRGB.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -94,6 +95,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_GaussianNoise, &CImage_ProcessingView::OnGaussiannoise)
 	ON_COMMAND(ID_HoughLineDetection, &CImage_ProcessingView::OnHoughlinedetection)
 	ON_COMMAND(ID_SobleGrad, &CImage_ProcessingView::OnSoblegrad)
+	ON_COMMAND(ID_ShowRGB, &CImage_ProcessingView::OnShowrgb)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -3199,5 +3201,56 @@ void CImage_ProcessingView::OnSoblegrad()
 
 		}
 	}
+	Invalidate(TRUE);
+}
+
+
+void CImage_ProcessingView::OnShowrgb()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (m_Image.IsNull()) {
+
+		OnFileOpen();
+		return;
+	}
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+	 
+	//恢复下原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
+	for (int k = 0; k < 3; k++)
+	{
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				m_Image.m_pBits[k][i][j] = m_Imagecp.m_pBits[k][i][j];
+			}
+		}
+	}
+
+	BOOL B_check(1), G_check(1), R_check(1);
+	Dlg_ShowRGB dlg;
+	if (IDOK == dlg.DoModal()) {
+		B_check = dlg.b_check;
+		G_check = dlg.g_check;
+		R_check = dlg.r_check;
+
+	}
+	else {
+		return;
+	}
+
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			m_Image.m_pBits[0][i][j] = m_Image.m_pBits[0][i][j] * B_check;
+			m_Image.m_pBits[1][i][j] = m_Image.m_pBits[1][i][j] * G_check;
+			m_Image.m_pBits[2][i][j] = m_Image.m_pBits[2][i][j] * R_check;
+		}
+
+	}
+
 	Invalidate(TRUE);
 }

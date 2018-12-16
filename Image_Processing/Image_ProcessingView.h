@@ -111,6 +111,7 @@ public:
 	afx_msg void OnGaussiannoise();
 	afx_msg void OnHoughlinedetection();
 	afx_msg void OnSoblegrad();
+	afx_msg void OnShowrgb();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本
