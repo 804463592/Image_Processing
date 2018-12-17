@@ -3330,7 +3330,7 @@ void CImage_ProcessingView::OnRgbtohsi()
 			}
 			else
 			{
-				H = BYTE(((2*PI-theta) / (2 * PI)) * 255);
+				H = BYTE(((2 * PI - theta) / (2 * PI)) * 255);
 			}
 
 			vector<BYTE> rgb;
@@ -3338,7 +3338,7 @@ void CImage_ProcessingView::OnRgbtohsi()
 			rgb.push_back(G);
 			rgb.push_back(B);
 			BYTE minvalue = *min_element(rgb.begin(), rgb.end());
-	
+
 
 			S = (1 - 3 * (minvalue) / (R + B + G + 0.0003)) * 255;
 
@@ -3361,11 +3361,11 @@ void CImage_ProcessingView::OnRgbtohsi()
 				m_Image.m_pBits[0][i][j] = newImageArr[0][i][j];
 				m_Image.m_pBits[1][i][j] = newImageArr[0][i][j];
 				m_Image.m_pBits[2][i][j] = newImageArr[0][i][j];
-				
+
 			}
 		}
 	}
-	else if(s_check ==1){ //S
+	else if (s_check == 1) { //S
 		for (int i = 0; i < h; i++)
 		{
 			for (int j = 0; j < w; j++)
@@ -3376,7 +3376,7 @@ void CImage_ProcessingView::OnRgbtohsi()
 
 			}
 		}
-	
+
 	}
 	else if (i_check == 1) { //I
 		for (int i = 0; i < h; i++)
@@ -3395,7 +3395,7 @@ void CImage_ProcessingView::OnRgbtohsi()
 		//do nothing 
 	}
 
-	
+
 
 	//回收指针
 
@@ -3420,23 +3420,18 @@ void CImage_ProcessingView::OnRgbtohsi()
 void CImage_ProcessingView::OnRgbHistBalance()
 {
 	// TODO: 在此添加命令处理程序代码
-	if (m_Image.IsNull()) 
+	if (m_Image.IsNull())
 	{
 		OnFileOpen();
-	
+
 		return;
 	}
-
-	m_Image.Flag = 4;	//恢复FLAG为4,以对比的特殊方式显示
-
 	m_Image.GetHistgram();//获取概率直方图统计,保存在m_Image.probability数组中
 
-	long i, j;		//循环计数
-	BYTE pixel1, pixel2, pixel3;		//像素值
+	int i, j;		//循环计数
 
 	float temp[3][256];
 	int   nRst[3][256];//映射表
-	int nrow = m_Image.m_CImage.GetPitch();//获得m_CImage每一行像素的RGB所占用的存储空间的大小
 
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
@@ -3455,16 +3450,16 @@ void CImage_ProcessingView::OnRgbHistBalance()
 		else
 		{
 			temp[0][i] = temp[0][i - 1] + m_Image.probability[0][i];  //r通道,累积像素函数temp中的是概率,小于1的
-			temp[1][i] = temp[1][i - 1] + m_Image.probability[0][i];  //g通道,累积像素函数
-			temp[2][i] = temp[2][i - 1] + m_Image.probability[0][i];  //b通道,累积像素函数
+			temp[1][i] = temp[1][i - 1] + m_Image.probability[1][i];  //g通道,累积像素函数
+			temp[2][i] = temp[2][i - 1] + m_Image.probability[2][i];  //b通道,累积像素函数
 		}
 	}
 
 	for (i = 0; i < 256; i++)
 	{
-		nRst[0][i] = (int)(255.0f * temp[0][i] + 0.5f);      //nRst[i],直方图均衡灰度变换映射
-		nRst[1][i] = (int)(255.0f * temp[1][i] + 0.5f);
-		nRst[2][i] = (int)(255.0f * temp[2][i] + 0.5f);
+		nRst[0][i] = (int)(255 * temp[0][i]);     //nRst[i],直方图均衡灰度变换映射
+		nRst[1][i] = (int)(255 * temp[1][i]);
+		nRst[2][i] = (int)(255 * temp[2][i]);
 
 	}
 
@@ -3472,23 +3467,21 @@ void CImage_ProcessingView::OnRgbHistBalance()
 	{
 		for (i = 0; i < w; i++)
 		{
-			pixel1 = m_Image.m_pBits[0][j][i];
-			pixel2 = m_Image.m_pBits[1][j][i];
-			pixel3 = m_Image.m_pBits[2][j][i];
 
-			m_Image.m_pBits[0][j][i] = (BYTE)(nRst[0][pixel1]);
-			m_Image.m_pBits[1][j][i] = (BYTE)(nRst[1][pixel2]);
-			m_Image.m_pBits[2][j][i] = (BYTE)(nRst[2][pixel3]);
+			m_Image.m_pBits[0][j][i] = (BYTE)(nRst[0][m_Image.m_pBits[0][j][i]]);
+			m_Image.m_pBits[1][j][i] = (BYTE)(nRst[1][m_Image.m_pBits[1][j][i]]);
+			m_Image.m_pBits[2][j][i] = (BYTE)(nRst[2][m_Image.m_pBits[2][j][i]]);
 			//各通道单独均衡化,最后显示会失真
 			//彩色图像均衡化,可以转到HSI空间进行
 
 		}
 	}
 
-	m_Imagecp.X = 100;            //给出绘图位置,对比处理的效果
-	m_Imagecp.Y = 100;
-	m_Image.X = m_Imagecp.X + 10 + m_Imagecp.GetWidth();
-	m_Image.Y = m_Imagecp.Y;
+	//m_Image.Flag = 4;	//恢复FLAG为4,以对比的特殊方式显示
+	//m_Imagecp.X = 100;            //给出绘图位置,对比处理的效果
+	//m_Imagecp.Y = 100;
+	//m_Image.X = m_Imagecp.X + 10 + m_Imagecp.GetWidth();
+	//m_Image.Y = m_Imagecp.Y;
 
 	Invalidate(1);
 
@@ -3507,7 +3500,7 @@ void CImage_ProcessingView::OnHsiHistBalance()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
-	//恢复下原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
+	//恢复原图,以防止用户多次调用此函数而造成灰度值全变为0的情况
 	for (int k = 0; k < 3; k++)
 	{
 		for (int i = 0; i < h; i++)
@@ -3519,83 +3512,103 @@ void CImage_ProcessingView::OnHsiHistBalance()
 		}
 	}
 
-
-	BYTE *** newImageArr = new BYTE**[3];
+	//三位数组,用于暂存H,S,I分量
+	BYTE *** HsiArr = new BYTE**[3];
 	for (int k = 0; k < 3; k++) {
-		newImageArr[k] = new BYTE*[h];
+		HsiArr[k] = new BYTE*[h];
 		for (int i = 0; i < h; i++) {
 
-			newImageArr[k][i] = new BYTE[w];
+			HsiArr[k][i] = new BYTE[w];
 
 		}
 	}
 
-	//转换到HSI空间
-	BYTE R(0), G(0), B(0);
-	BYTE H(0), S(0), I(0);
+	////转换到HSI空间
+	double R1(0), G1(0), B1(0);
+	double H1(0), S1(0), I1(0);
 
-	const double PI = 3.141593;
+	const double PI = 3.141592653;
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
 		{
 
-			B = m_Image.m_pBits[0][i][j];
-			G = m_Image.m_pBits[1][i][j];
-			R = m_Image.m_pBits[2][i][j];
+			B1 = m_Image.m_pBits[0][i][j];
+			G1 = m_Image.m_pBits[1][i][j];
+			R1 = m_Image.m_pBits[2][i][j];
 
-			double theta = acos(0.5*(2 * R - B - G) / sqrt((R - G)*(R - G) + (R - B)*(R - B) + (G - B)*(G - B)));
-			if (B <= G)
+			double theta = acos(0.5*(2 * R1 - B1 - G1) / (0.0001 + sqrt((R1 - G1)*(R1 - G1) + (R1 - B1)*(G1 - B1))));
+			if (B1 <= G1)
 			{
-				H = BYTE((theta / (2 * PI)) * 255);
+				H1 = double(theta);
 			}
 			else
 			{
-				H = BYTE(((2 * PI - theta) / (2 * PI)) * 255);
+				H1 = double(2 * PI - theta);
 			}
 
-			vector<BYTE> rgb;
-			rgb.push_back(R);
-			rgb.push_back(G);
-			rgb.push_back(B);
-			BYTE minvalue = *min_element(rgb.begin(), rgb.end());
+			//vector<double> rgb;  //使用vector速度慢,不推荐
+			//rgb.push_back(R1);
+			//rgb.push_back(G1);
+			//rgb.push_back(B1);
+			//double minvalue = *min_element(rgb.begin(), rgb.end());
 
+			//double minvalue = min(B1,G1,R1);  //慎用:宏定义min里面,为什么B,G必须在R前面,否则图像会失真呢?
 
-			S = (1 - 3 * (minvalue) / (R + B + G + 0.0003)) * 255;
+			double minvalue;
+			if (G1 < B1 && G1 < R1) {
+				minvalue = G1;
+			}
+			else if (R1 < B1 && R1 < G1) {
+				minvalue = R1;
+			}
+			else {
+				minvalue = B1;
+			}
 
-			I = BYTE((R + B + G) / 3);
+			S1 = (1 - 3 * (minvalue) / (R1 + B1 + G1 + 0.0003));
 
-			newImageArr[0][i][j] = H;
-			newImageArr[1][i][j] = S;
-			newImageArr[2][i][j] = I;
+			I1 = double((R1 + B1 + G1) / 3);
+
+			HsiArr[0][i][j] = (H1 / (2 * PI)) * 255;
+			HsiArr[1][i][j] = S1 * 255;
+			HsiArr[2][i][j] = I1;
+
+			m_Image.m_pBits[0][i][j] = (H1 / (2 * PI)) * 255;
+			m_Image.m_pBits[1][i][j] = S1 * 255;
+			m_Image.m_pBits[2][i][j] = I1;
 
 		}
 
 	}
 
-	//显示
-	//for (int i = 0; i < h; i++)
-	//{
-	//	for (int j = 0; j < w; j++)
-	//	{
-	//		m_Image.m_pBits[0][i][j] = newImageArr[0][i][j];
-	//		m_Image.m_pBits[1][i][j] = newImageArr[1][i][j];
-	//		m_Image.m_pBits[2][i][j] = newImageArr[2][i][j];
-	//	}
-	//}
+	Invalidate(TRUE);
+	MessageBox(L"已将转到HSI");
 
-	//统计I分量上的概率分布
-	int gray_hist[256] = {0};  //先将第一个元素赋值为0,后面各元素默认为0
-	double prob[256] = {0};
+	//显示
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
 		{
-			gray_hist[newImageArr[2][i][j]]++;
+			m_Image.m_pBits[0][i][j] = HsiArr[0][i][j];
+			m_Image.m_pBits[1][i][j] = HsiArr[1][i][j];
+			m_Image.m_pBits[2][i][j] = HsiArr[2][i][j];
 		}
 	}
+
+	//统计I分量上的概率分布
+	int gray_hist[256] = { 0 };  //先将第一个元素赋值为0,后面各元素默认为0
+	double prob[256] = { 0 };
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			gray_hist[HsiArr[2][i][j]]++;
+		}
+	}
+
 	for (int i = 0; i < 256; i++) {
-		prob[i] = double(gray_hist[i]) /double(w*h);
+		prob[i] = double(gray_hist[i]) / double(w*h);
 	}
 
 	//计算累积概率函数
@@ -3605,6 +3618,7 @@ void CImage_ProcessingView::OnHsiHistBalance()
 		if (0 == i) {
 
 			cum_dst[i] = prob[i];
+
 		}
 		else {
 
@@ -3617,26 +3631,91 @@ void CImage_ProcessingView::OnHsiHistBalance()
 	BYTE gray_map[256] = { 0 };
 	for (int i = 0; i < 256; i++) {
 
-		gray_map[i] = BYTE(255*cum_dst[i]);
+		gray_map[i] = BYTE(255 * cum_dst[i]);
 
 	}
 
 	//将修改后的I分量保存在newImageArr中
-	for (int i = 0; i < h; i++) {
-		for (int j = 0; j < w; j++) {
-				newImageArr[2][i][j] = gray_map[newImageArr[2][i][j]];
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			HsiArr[2][i][j] = gray_map[HsiArr[2][i][j]];
+		}
+
+	}
+
+	//再新建一个三维数组用于存储转换回来的RGB分量
+	BYTE*** newRgbArr = new BYTE**[3];
+	for (int k = 0; k < 3; k++) {
+		newRgbArr[k] = new BYTE *[h];
+		for (int i = 0; i < h; i++) {
+			newRgbArr[k][i] = new BYTE[w];
 		}
 
 	}
 
 	//从HSI转到RGB
+	double BB, GG, RR;
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+
+			//H需要转到0-2*PI之间,S也需要转一下
+			double HH = (2 * PI*(double)HsiArr[0][i][j] / 255);  //0-2*PI
+			double SS = (double)HsiArr[1][i][j] / 255;   //0-1
+			double II = (double)HsiArr[2][i][j];  //0-255
+
+			//double BB(0), GG(0), RR(0);  //使用BYTE值可能会溢出,使用BYTE会产生很多截断处理,即257被截成2这样的
+
+			//判断H的范围
+			if ((0 <= HH) && (HH < (2 * PI / 3)))
+			{
+				BB = II * (1 - SS);
+				RR = II * (1 + SS * cos(HH) / cos(PI / 3 - HH));
+				GG = 3 * II - (RR + BB);
+			}
+			else if ((2 * PI / 3 <= HH) && (HH < (4 * PI / 3)))
+			{
+				HH = HH - 2 * PI / 3;  //减去120度
+				RR = II * (1 - SS);
+				GG = II * (1 + SS * cos(HH) / cos(PI / 3 - HH));
+				BB = 3 * II - (RR + GG);
+			}
+			else if (((4 * PI / 3) <= HH) && (HH < 2 * PI))
+			{
+				HH = HH - 4 * PI / 3;  //减去240度
+				GG = II * (1 - SS);
+				BB = II * (1 + SS * cos(HH) / cos(PI / 3 - HH));
+				RR = 3 * II - (BB + GG);
+			}
+
+			//将BB,GG,RR保存起来
+			//newRgbArr[0][i][j] = BB;
+			//newRgbArr[1][i][j] = GG;
+			//newRgbArr[2][i][j] = RR;
+
+			m_Image.m_pBits[0][i][j] = BB > 255 ? 255 : BB < 0 ? 0 : BB;
+			m_Image.m_pBits[1][i][j] = GG > 255 ? 255 : GG < 0 ? 0 : GG;
+			m_Image.m_pBits[2][i][j] = RR > 255 ? 255 : RR < 0 ? 0 : RR;
+		}
+
+	}
+
+
+	//释放数组内存
+	for (int k = 0; k < 3; k++)
+	{
+		for (int i = 0; i < h; i++)
+		{
+			delete[]HsiArr[k][i];
+		}
+		delete[]HsiArr[k];
+	}
+	delete[]HsiArr;
 
 
 
-
-
-
-
-
-	Invalidate(1);
+	Invalidate(TRUE);
 }
