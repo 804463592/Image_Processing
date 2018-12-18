@@ -3815,8 +3815,8 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 				dc.SetROP2(nOldMode);
 				//MessageBox(L"22222!!");
 
-				LastEmptyEnd = point;
-				IsROIChoosed = TRUE;
+				LastEmptyEnd = point;  //保存结束点的坐标
+				IsROIChoosed = TRUE;  //修改标志位,后面有时间再加个判断,排除鼠标点击(也就是不选中区域的)事件
 
 				//使得选中区域变暗,但是存在bug,即只能是从左上划到右下这样的区域,以后再来优化吧,要考虑的东西太多了!!!!
 				for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
