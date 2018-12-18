@@ -59,6 +59,14 @@ public:
 	int w;//图像尺寸
 	int h;//图像尺寸
 
+	//下面的变量,用于彩色图像分割时,选取初始的中心位置
+	bool m_bClickEmpty =false; //判断是否点击了空白的地方，以实现拖动框选择 
+	CPoint OldEmptyBegin;//点击空白开始的座标
+	CPoint NowEmptyEnd;//移动时保存座标
+	CPoint LastEmptyEnd;  //鼠标松开时保存的坐标
+	BOOL IsROIChoosed =FALSE; //标志,表示用户是否已经选取了彩色图像分割的区域中心
+	BOOL IsSegment = FALSE; //标志,判断用户是否选择分割
+
 	/*afs_msg 其中 afx_msg为消息标志，它向系统声明：有消息映射到函数实现体；
 	而在map宏定义中，就有具体消息和此函数的映射定义*/
 	afx_msg void OnDrawline();   
@@ -115,6 +123,13 @@ public:
 	afx_msg void OnRgbtohsi();
 	afx_msg void OnRgbHistBalance();
 	afx_msg void OnHsiHistBalance();
+	afx_msg void OnColorimgsegment();
+
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);  //响应鼠标按下事件
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);  
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+
+
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本
