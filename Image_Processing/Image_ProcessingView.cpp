@@ -3703,6 +3703,7 @@ void CImage_ProcessingView::OnHsiHistBalance()
 
 	}
 
+
 	//释放数组内存
 	for (int k = 0; k < 3; k++)
 	{
@@ -3713,6 +3714,8 @@ void CImage_ProcessingView::OnHsiHistBalance()
 		delete[]HsiArr[k];
 	}
 	delete[]HsiArr;
+
+
 
 	Invalidate(TRUE);
 }
