@@ -100,6 +100,13 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_COMMAND(ID_RGBToHSI, &CImage_ProcessingView::OnRgbtohsi)
 	ON_COMMAND(ID_RGB_Hist_Balance, &CImage_ProcessingView::OnRgbHistBalance)
 	ON_COMMAND(ID_HSI_Hist_Balance, &CImage_ProcessingView::OnHsiHistBalance)
+	ON_COMMAND(ID_ColorImgSegment, &CImage_ProcessingView::OnColorimgsegment)
+
+	ON_WM_LBUTTONDOWN()     //消息映射,发出鼠标按下的消息
+	ON_WM_LBUTTONUP()    //鼠标松开消息
+	ON_WM_MOUSEMOVE()
+
+
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -144,8 +151,6 @@ void CImage_ProcessingView::OnDraw(CDC* pDC)
 	//{
 	//	m_Image.Draw(pDC->m_hDC,0,0); 
 	//}
-
-
 	//return;
 	/////////////////////////////////////////设置背景颜色
 	CRect   rect1;
@@ -157,8 +162,8 @@ void CImage_ProcessingView::OnDraw(CDC* pDC)
 		rect2.top = rect1.bottom / 4;
 		rect2.right = rect1.right * 2 / 3;
 		rect2.bottom = rect1.bottom * 3 / 4;
-		pDC->FillSolidRect(rect1, RGB(128, 128, 128));
-		pDC->FillSolidRect(rect2, RGB(169, 169, 169));
+		pDC->FillSolidRect(rect1, RGB(128, 128, 128));  //大矩形
+		pDC->FillSolidRect(rect2, RGB(169, 169, 169));  //小矩形
 	}
 
 	//////////////////////////////////////////画图
@@ -537,7 +542,7 @@ void CImage_ProcessingView::OnShowred()
 
 //void CImage_ProcessingView::OnViewToolbar()
 //{
-//	// TODO: 在此添加命令处理程序代码
+// TODO: 在此添加命令处理程序代码
 //}
 
 void CImage_ProcessingView::OnTogrey()
@@ -3718,4 +3723,202 @@ void CImage_ProcessingView::OnHsiHistBalance()
 
 
 	Invalidate(TRUE);
+}
+
+
+void CImage_ProcessingView::OnColorimgsegment()
+{
+	// TODO: 彩色图像分割
+	if (m_Image.IsNull()) //判断图像是否为空，如果对空图像进行操作会出现未知的错误
+	{
+		OnFileOpen();
+		return;
+	}
+	IsSegment = TRUE;
+	//判断下用户是否点击鼠标,选取了区域
+
+	MessageBox(L"先选择分割中心区域哦");
+	
+	if (IsROIChoosed) {
+
+
+		for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+		{
+			for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
+			{
+				for (int k = 0; k < 3; k++)
+				{
+
+					if (m_Image.m_pBits[k][i][j] > 40) {
+						m_Image.m_pBits[k][i][j] -= 40;
+					}
+					m_Image.m_pBits[k][i][j] = BYTE(m_Image.m_pBits[k][i][j]);
+				}
+			}
+
+		}
+		Invalidate(TRUE);
+
+		IsSegment = FALSE;
+
+	}
+	
+
+	//CPoint   point;
+	//GetCursorPos(&point);
+	//CRect rect_ctr;
+	//this->GetWindowRect(&rect_ctr);   //获取主窗口相对屏幕左上角的坐标，/存储到rect_ctr中
+	//point.x += rect_ctr.left;        //在屏幕上的绝对坐标
+	//point.y += rect_ctr.top;         
+
+
+	//while (1)  //为什么不行?
+	//{
+	//	if (point.x >= 130 && point.x <= 810 && point.y >= 60 && point.y <= 650)
+	//	{
+	//		
+	//		GetCursorPos(&point);
+	//		MessageBox(L"hehe");
+	//	}
+	//}
+	//SetCursorPos(100, 200);//移动到某点坐标
+
+
+	//GetCursorPos(&point);
+	//MessageBox(L"hehe1");
+	//int  i= 2;
+	//float f = 1.8f;
+
+	//CString s;
+	//s.Format(L"%d", point.x);
+	//MessageBox(s);
+	//s.Format(L"%.1f", f);
+	//MessageBox(s);
+
+
+	//SetCursorPos(400, 200);//移动到某点坐标
+	//GetCursorPos(&point);
+	//MessageBox(L"hehe2");
+
+
+	//s.Format(L"%d", point.x);
+	//MessageBox(s);
+
+	//SetCursorPos(700, 800);//移动到某点坐标
+	//GetCursorPos(&point);
+	//MessageBox(L"hehe2");
+	//s.Format(L"%d", point.y);
+	//MessageBox(s);
+
+}
+
+
+void CImage_ProcessingView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	//加个判断,即必须在框内才会修改m_bClickEmpty为起始点赋值,否则会出现问题
+	if (!m_Image.IsNull() && IsSegment ) { //使用图片的位置判断
+		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
+			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
+		{
+			m_bClickEmpty = true;
+
+			OldEmptyBegin = point;
+
+			NowEmptyEnd = point;
+
+			//MessageBox(L"1111111!!");
+		}
+
+	}
+	else {//使用矩形框的位置判断
+
+		//MessageBox(L"先打开图片再说哟!!");
+		return;
+
+	}
+
+	CWnd::OnLButtonDown(nFlags, point);
+}
+
+void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if (!m_Image.IsNull() && IsSegment) { //使用图片的位置判断
+		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
+			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
+		{
+			if (m_bClickEmpty) {
+				m_bClickEmpty = false;//到这儿说明用户松开了鼠标,修改标志位
+
+				CClientDC dc(this);
+
+				CBrush *pBrush = CBrush::FromHandle((HBRUSH)GetStockObject(NULL_BRUSH));
+
+				CBrush *POldBrush = dc.SelectObject(pBrush);
+
+				int nOldMode = dc.SetROP2(R2_NOTXORPEN);
+
+				dc.Rectangle(&CRect(OldEmptyBegin, NowEmptyEnd));
+
+				dc.SelectObject(POldBrush);
+
+				dc.SetROP2(nOldMode);
+				//MessageBox(L"22222!!");
+
+				LastEmptyEnd = point;
+				IsROIChoosed = TRUE;
+			}
+
+		}
+
+	}
+	else {//使用矩形框的位置判断
+
+		//MessageBox(L"先打开图片再说哟!!");
+		return;
+	}
+
+	CWnd::OnLButtonUp(nFlags, point); //调用下基类的
+}
+
+void CImage_ProcessingView::OnMouseMove(UINT nFlags, CPoint point)
+{
+
+	if (!m_Image.IsNull() && IsSegment) { //使用图片的位置判断
+		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
+			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
+		{
+			if (m_bClickEmpty) {
+				CClientDC dc(this);
+
+				CBrush *pBrush = CBrush::FromHandle((HBRUSH)GetStockObject(NULL_BRUSH));
+
+				CBrush *POldBrush = dc.SelectObject(pBrush);
+
+				int nOldMode = dc.SetROP2(R2_NOTXORPEN);
+
+				dc.Rectangle(&CRect(OldEmptyBegin, NowEmptyEnd));
+
+				dc.Rectangle(&CRect(OldEmptyBegin, point));
+
+				NowEmptyEnd = point;
+
+				dc.SelectObject(POldBrush);
+
+				dc.SetROP2(nOldMode);
+
+			}
+		}
+
+
+
+
+	}
+	else {//使用矩形框的位置判断
+
+
+		return;
+
+	}
+
+	CWnd::OnMouseMove(nFlags, point);
 }
