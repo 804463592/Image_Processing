@@ -3734,89 +3734,40 @@ void CImage_ProcessingView::OnColorimgsegment()
 		OnFileOpen();
 		return;
 	}
-	IsSegment = TRUE;
-	//判断下用户是否点击鼠标,选取了区域
 
-	MessageBox(L"先选择分割中心区域哦");
-	
-	if (IsROIChoosed) {
+	if (!IsROIChoosed) {
+		//判断下用户是否点击鼠标,选取了区域
+		MessageBox(L"先选择分割中心区域哦");
+		return;
+	}
 
-
-		for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+	//恢复原来已经变暗的这部分图像,同时,用户选取的区域信息就保存在OldEmptyBegin和LastEmptyEnd中
+	for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+	{
+		for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
 		{
-			for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
+			for (int k = 0; k < 3; k++)
 			{
-				for (int k = 0; k < 3; k++)
-				{
-
-					if (m_Image.m_pBits[k][i][j] > 40) {
-						m_Image.m_pBits[k][i][j] -= 40;
-					}
-					m_Image.m_pBits[k][i][j] = BYTE(m_Image.m_pBits[k][i][j]);
-				}
+				m_Image.m_pBits[k][i][j] = BYTE(m_Imagecp.m_pBits[k][i][j]);
 			}
-
 		}
-		Invalidate(TRUE);
-
-		IsSegment = FALSE;
 
 	}
-	
+	Invalidate(TRUE);
+	//计算中心
 
-	//CPoint   point;
-	//GetCursorPos(&point);
-	//CRect rect_ctr;
-	//this->GetWindowRect(&rect_ctr);   //获取主窗口相对屏幕左上角的坐标，/存储到rect_ctr中
-	//point.x += rect_ctr.left;        //在屏幕上的绝对坐标
-	//point.y += rect_ctr.top;         
+	//彩色图像分割
 
-
-	//while (1)  //为什么不行?
-	//{
-	//	if (point.x >= 130 && point.x <= 810 && point.y >= 60 && point.y <= 650)
-	//	{
-	//		
-	//		GetCursorPos(&point);
-	//		MessageBox(L"hehe");
-	//	}
-	//}
-	//SetCursorPos(100, 200);//移动到某点坐标
-
-
-	//GetCursorPos(&point);
-	//MessageBox(L"hehe1");
-	//int  i= 2;
-	//float f = 1.8f;
-
-	//CString s;
-	//s.Format(L"%d", point.x);
-	//MessageBox(s);
-	//s.Format(L"%.1f", f);
-	//MessageBox(s);
-
-
-	//SetCursorPos(400, 200);//移动到某点坐标
-	//GetCursorPos(&point);
-	//MessageBox(L"hehe2");
-
-
-	//s.Format(L"%d", point.x);
-	//MessageBox(s);
-
-	//SetCursorPos(700, 800);//移动到某点坐标
-	//GetCursorPos(&point);
-	//MessageBox(L"hehe2");
-	//s.Format(L"%d", point.y);
-	//MessageBox(s);
 
 }
 
 
 void CImage_ProcessingView::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	//加个判断,即必须在框内才会修改m_bClickEmpty为起始点赋值,否则会出现问题
-	if (!m_Image.IsNull() && IsSegment ) { //使用图片的位置判断
+	
+	if (!m_Image.IsNull()) { //使用图片的位置判断
+		
+		 //加个判断,即必须在框内才会修改m_bClickEmpty为起始点赋值,否则会出现问题
 		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
 			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
 		{
@@ -3842,7 +3793,7 @@ void CImage_ProcessingView::OnLButtonDown(UINT nFlags, CPoint point)
 
 void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if (!m_Image.IsNull() && IsSegment) { //使用图片的位置判断
+	if (!m_Image.IsNull()) { //使用图片的位置判断
 		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
 			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
 		{
@@ -3866,6 +3817,27 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 
 				LastEmptyEnd = point;
 				IsROIChoosed = TRUE;
+
+				//使得选中区域变暗,但是存在bug,即只能是从左上划到右下这样的区域,以后再来优化吧,要考虑的东西太多了!!!!
+				for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+				{
+					for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
+					{
+						for (int k = 0; k < 3; k++)
+						{
+
+							if (m_Image.m_pBits[k][i][j] > 40) {
+								m_Image.m_pBits[k][i][j] -= 40;
+							}
+							m_Image.m_pBits[k][i][j] = BYTE(m_Image.m_pBits[k][i][j]);
+						}
+					}
+
+				}
+				Invalidate(TRUE);
+
+
+
 			}
 
 		}
@@ -3883,7 +3855,7 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 void CImage_ProcessingView::OnMouseMove(UINT nFlags, CPoint point)
 {
 
-	if (!m_Image.IsNull() && IsSegment) { //使用图片的位置判断
+	if (!m_Image.IsNull()) { //使用图片的位置判断
 		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
 			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
 		{
