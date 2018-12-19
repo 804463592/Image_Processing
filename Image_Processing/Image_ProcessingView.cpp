@@ -3729,11 +3729,14 @@ void CImage_ProcessingView::OnHsiHistBalance()
 void CImage_ProcessingView::OnColorimgsegment()
 {
 	// TODO: 彩色图像分割
-	if (m_Image.IsNull()) //判断图像是否为空，如果对空图像进行操作会出现未知的错误
+	if (m_Image.IsNull())
 	{
 		OnFileOpen();
 		return;
 	}
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
 
 	if (!IsROIChoosed) {
 		//判断下用户是否点击鼠标,选取了区域
@@ -3741,10 +3744,18 @@ void CImage_ProcessingView::OnColorimgsegment()
 		return;
 	}
 
+	//局部变量,用以表示选中区域的相对坐标起始点
+	int x_start, y_start, x_end, y_end;
+	x_start = OldEmptyBegin.x - m_Image.X;
+	x_end = LastEmptyEnd.x - m_Image.X;
+
+	y_start = OldEmptyBegin.y - m_Image.Y;
+	y_end = LastEmptyEnd.y - m_Image.Y;
+
 	//恢复原来已经变暗的这部分图像,同时,用户选取的区域信息就保存在OldEmptyBegin和LastEmptyEnd中
-	for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+	for (int i = y_start; i < y_end; i++)
 	{
-		for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
+		for (int j = x_start; j < x_end; j++)
 		{
 			for (int k = 0; k < 3; k++)
 			{
@@ -3754,19 +3765,53 @@ void CImage_ProcessingView::OnColorimgsegment()
 
 	}
 	Invalidate(TRUE);
-	//计算中心
+	//区域内,RGB三个通道各自的均值
+	double b_mean(0), g_mean(0), r_mean(0);
+	int pixel_counts = (y_end - y_start)*(x_end - x_start);
+	//计算RGB均值中心
+	for (int i = y_start; i < y_end; i++)
+	{
+		for (int j = x_start; j < x_end; j++)
+		{
+			b_mean += (double)m_Image.m_pBits[0][i][j] / (double)pixel_counts;
+			g_mean += (double)m_Image.m_pBits[1][i][j] / (double)pixel_counts;
+			r_mean += (double)m_Image.m_pBits[2][i][j] / (double)pixel_counts;
 
-	//彩色图像分割
+		}
 
+	}
 
+	//使用折中方案计算距离并分割,类似于曼哈顿距离,计算量上更少一点
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			double dist = abs(m_Image.m_pBits[0][i][j] - b_mean) + abs(m_Image.m_pBits[1][i][j] - g_mean)
+				+ abs(m_Image.m_pBits[2][i][j]);
+
+			if (dist < 230) {
+				m_Image.m_pBits[0][i][j] = b_mean;
+				m_Image.m_pBits[1][i][j] = g_mean;
+				m_Image.m_pBits[2][i][j] = r_mean;
+
+			}
+			else {
+				m_Image.m_pBits[0][i][j] = 240;
+				m_Image.m_pBits[1][i][j] = 120;
+				m_Image.m_pBits[2][i][j] = 40;
+			}
+		}
+	}
+
+	Invalidate(TRUE);
 }
 
 
 void CImage_ProcessingView::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	
+
 	if (!m_Image.IsNull()) { //使用图片的位置判断
-		
+
 		 //加个判断,即必须在框内才会修改m_bClickEmpty为起始点赋值,否则会出现问题
 		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
 			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
@@ -3818,10 +3863,20 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 				LastEmptyEnd = point;  //保存结束点的坐标
 				IsROIChoosed = TRUE;  //修改标志位,后面有时间再加个判断,排除鼠标点击(也就是不选中区域的)事件
 
+
+				//局部变量,用以表示选中区域的相对坐标起始点
+				int x_start, y_start, x_end, y_end;
+				//TODO:根据点的相对位置,加以判断,计算x_start和x_end,y_start,y_end,从而使得用户可以以任意方式画矩形
+				x_start = OldEmptyBegin.x - m_Image.X;
+				x_end = LastEmptyEnd.x - m_Image.X;
+
+				y_start = OldEmptyBegin.y - m_Image.Y;
+				y_end = LastEmptyEnd.y - m_Image.Y;
+
 				//使得选中区域变暗,但是存在bug,即只能是从左上划到右下这样的区域,以后再来优化吧,要考虑的东西太多了!!!!
-				for (int i = abs(OldEmptyBegin.y - m_Image.Y); i < abs(LastEmptyEnd.y - m_Image.Y); i++)
+				for (int i = y_start; i < y_end; i++)
 				{
-					for (int j = abs(OldEmptyBegin.x - m_Image.X); j < abs(LastEmptyEnd.x - m_Image.X); j++)
+					for (int j = x_start; j < x_end; j++)
 					{
 						for (int k = 0; k < 3; k++)
 						{
