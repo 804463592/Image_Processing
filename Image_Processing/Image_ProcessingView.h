@@ -65,8 +65,7 @@ public:
 	CPoint NowEmptyEnd;//移动时保存座标
 	CPoint LastEmptyEnd;  //鼠标松开时保存的坐标
 	BOOL IsROIChoosed =FALSE; //标志,表示用户是否已经选取了彩色图像分割的区域中心
-	int x_start, y_start, x_end, y_end;//变量,用以表示图片中,选中区域的相对坐标起始点
-
+	int x_start, y_start, x_end, y_end;//变量,用以表示图片中,选中区域的相对坐标起始点,在OnLButtonUp中修改其值
 
 
 	/*afs_msg 其中 afx_msg为消息标志，它向系统声明：有消息映射到函数实现体；
@@ -90,6 +89,7 @@ public:
 	int MouseY2;
 
 	// 傅立叶变换的次数
+
 	int FftTime;
 	ComplexNum *FTResult;// = NULL;//傅立叶变换结果
 
@@ -132,6 +132,7 @@ public:
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 
 
+	afx_msg void OnGlobalThreshold();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本

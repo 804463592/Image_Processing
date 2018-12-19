@@ -107,6 +107,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 	ON_WM_MOUSEMOVE()
 
 
+	ON_COMMAND(ID_BasicGlobalThresholdMethod, &CImage_ProcessingView::OnGlobalThreshold)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -121,13 +122,8 @@ CImage_ProcessingView::CImage_ProcessingView()
 	, MouseX2(0)
 	, MouseY2(0)
 
-
-
-
-
 {
 	// TODO: 在此处添加构造代码
-
 	m_bClickEmpty = false; //判断是否点击了空白的地方，以实现拖动框选择 
 	IsROIChoosed = FALSE; //标志,表示用户是否已经选取了彩色图像分割的区域中心
 	x_start = 0;//变量,用以表示图片中,选中区域的相对坐标起始点;其值主要在OnLButtonUp中修改
@@ -3752,12 +3748,13 @@ void CImage_ProcessingView::OnColorimgsegment()
 
 	if (!IsROIChoosed) {
 		//判断下用户是否点击鼠标,选取了区域
-		MessageBox(L"请先在原图上,点击鼠标左键并滑动,选择分割中心区域!");
+		MessageBox(L"请先在原图范围内,点击鼠标左键并滑动,选择分割中心区域!");
 		return;
 	}
 
 	//恢复原来已经变暗的这部分图像,同时,用户选取的区域信息就保存在OldEmptyBegin和LastEmptyEnd中
-	//实际上这里恢复原图,可以将m_Imagecp整张图全拷贝过来,也并没有增加多大开销
+	//实际上这里恢复原图,可以将m_Imagecp整张图全拷贝过来,也并没有增加多大开销;
+	//这里这么做只是为了验证分割时,获得的区域是否真正是用户选择的,毕竟后面我们计算中心时,需要这个区域
 	for (int i = y_start; i < y_end; i++)
 	{
 		for (int j = x_start; j < x_end; j++)
@@ -3787,6 +3784,9 @@ void CImage_ProcessingView::OnColorimgsegment()
 	}
 
 	//使用折中方案计算距离并分割,类似于曼哈顿距离,计算量上更少一点
+	BYTE b = rand() % 255;  //分割后,其中一部分的颜色
+	BYTE g = rand() % 255;
+	BYTE r = rand() % 255;
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
@@ -3794,7 +3794,8 @@ void CImage_ProcessingView::OnColorimgsegment()
 			double dist = abs(m_Image.m_pBits[0][i][j] - b_mean) + abs(m_Image.m_pBits[1][i][j] - g_mean)
 				+ abs(m_Image.m_pBits[2][i][j]);
 
-			if (dist < 230) {  //这个阈值,可能不同的图,最佳选择不一样
+			if (dist < 230)
+			{//这个阈值,可能不同的图,最佳选择不一样(如果选择的图时Lenna,区域是Lenna的头发,这个阈值能较好的进行彩色图像分割)
 
 				m_Image.m_pBits[0][i][j] = b_mean;
 				m_Image.m_pBits[1][i][j] = g_mean;
@@ -3802,14 +3803,15 @@ void CImage_ProcessingView::OnColorimgsegment()
 
 			}
 			else {
-				m_Image.m_pBits[0][i][j] = 40;
-				m_Image.m_pBits[1][i][j] = 240;
-				m_Image.m_pBits[2][i][j] = 40;
+				m_Image.m_pBits[0][i][j] = b;
+				m_Image.m_pBits[1][i][j] = g;
+				m_Image.m_pBits[2][i][j] = r;
 			}
 		}
 	}
 
 	Invalidate(TRUE);
+
 }
 
 
@@ -3818,23 +3820,22 @@ void CImage_ProcessingView::OnLButtonDown(UINT nFlags, CPoint point)
 
 	if (!m_Image.IsNull()) { //使用图片的位置判断
 
-		 //加个判断,即必须在框内才会修改m_bClickEmpty为起始点赋值,否则会出现问题
+		 //加个判断,即必须在框内才会修改m_bClickEmpty,为起始点赋值,否则会出现问题
 		if (point.x > m_Image.X &&point.x < (m_Image.X + m_Image.GetWidth())
 			&& point.y > m_Image.Y &&point.y < (m_Image.Y + m_Image.GetHeight()))
 		{
-			m_bClickEmpty = true;
+			m_bClickEmpty = true;  //代表用户已经按下鼠标左键
 
 			OldEmptyBegin = point;
 
 			NowEmptyEnd = point;
 
-			//MessageBox(L"1111111!!");
 		}
 
 	}
 	else {//使用矩形框的位置判断
 
-		//MessageBox(L"先打开图片再说哟!!");
+
 		return;
 
 	}
@@ -3864,7 +3865,7 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 				dc.SelectObject(POldBrush);
 
 				dc.SetROP2(nOldMode);
-				//MessageBox(L"22222!!");
+
 				LastEmptyEnd = point;  //保存结束点的坐标
 
 				//TODO:根据点的相对位置,加以判断,计算x_start和x_end,y_start,y_end,从而使得用户可以以任意方式画矩形
@@ -3927,13 +3928,13 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 					}
 
 				}
-				
+
 				Invalidate(TRUE);
-				if (OldEmptyBegin.x !=LastEmptyEnd.x &&OldEmptyBegin.y!=LastEmptyEnd.y) {
+				if (OldEmptyBegin.x != LastEmptyEnd.x && OldEmptyBegin.y != LastEmptyEnd.y) {
 					IsROIChoosed = TRUE;  //修改标志位,这里的if判断是为了排除鼠标点击(也就是不选中区域的)事件
 				}
 				else {
-					IsROIChoosed = FALSE;  
+					IsROIChoosed = FALSE;
 				}
 
 			}
@@ -3989,4 +3990,88 @@ void CImage_ProcessingView::OnMouseMove(UINT nFlags, CPoint point)
 	}
 
 	CWnd::OnMouseMove(nFlags, point);
+}
+
+
+void CImage_ProcessingView::OnGlobalThreshold()
+{
+	// TODO: 在此添加命令处理程序代码
+	//MessageBox(L"基本全局阈值分割!");
+	if (m_Image.IsNull()) {
+		OnFileOpen();
+		return;
+	}
+
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+	//为全局阈值选择一个初始值T,后面考虑其他方式获取
+	double T = 125;
+	double T0 = T;
+
+	//分配一个三维数组,来不断的迭代保存分割图像,0,1,分别代表不同的类别
+	BOOL *** ImageClass = new BOOL**[3];
+	for (int k = 0; k < 3; k++)
+	{
+		ImageClass[k] = new BOOL*[h];
+		for (int i = 0; i < h; i++)
+		{
+			ImageClass[k][i] = new BOOL[w];
+			memset(ImageClass[k][i], 0, sizeof(BOOL)*w); //初始化
+		}
+	}
+
+	//转为灰度图
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			int b = (int)m_Image.m_pBits[0][j][i];
+			int g = (int)m_Image.m_pBits[1][j][i];
+			int r = (int)m_Image.m_pBits[2][j][i];
+			int ave = (20 * r + 50 * g + 30 * b) / 100;
+			m_Image.m_pBits[0][j][i] = (BYTE)ave;
+			m_Image.m_pBits[1][j][i] = (BYTE)ave;
+			m_Image.m_pBits[2][j][i] = (BYTE)ave;
+		}
+	}
+
+	double delta = 1;
+
+	while (abs(T - T0) > delta)
+	{
+		//分割
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				if (m_Image.m_pBits[0][i][j] < T) 
+				{
+					ImageClass[0][i][j] = 0;
+				}
+				else
+				{
+					ImageClass[0][i][j] = 1;
+				
+				}
+			}
+		}
+		//计算平均灰度
+		double m1(0), m2(0);
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				
+			}
+		}
+
+	}
+	
+	
+
+	//释放内存
+
+
+	Invalidate(TRUE);
 }
