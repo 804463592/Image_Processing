@@ -120,8 +120,20 @@ CImage_ProcessingView::CImage_ProcessingView()
 	, MouseY(0)
 	, MouseX2(0)
 	, MouseY2(0)
+
+
+
+
+
 {
 	// TODO: 在此处添加构造代码
+
+	m_bClickEmpty = false; //判断是否点击了空白的地方，以实现拖动框选择 
+	IsROIChoosed = FALSE; //标志,表示用户是否已经选取了彩色图像分割的区域中心
+	x_start = 0;//变量,用以表示图片中,选中区域的相对坐标起始点;其值主要在OnLButtonUp中修改
+	y_start = 0;
+	x_end = 0;
+	y_end = 0;
 
 }
 
@@ -3740,19 +3752,12 @@ void CImage_ProcessingView::OnColorimgsegment()
 
 	if (!IsROIChoosed) {
 		//判断下用户是否点击鼠标,选取了区域
-		MessageBox(L"先选择分割中心区域哦");
+		MessageBox(L"请先在原图上,点击鼠标左键并滑动,选择分割中心区域!");
 		return;
 	}
 
-	//局部变量,用以表示选中区域的相对坐标起始点
-	int x_start, y_start, x_end, y_end;
-	x_start = OldEmptyBegin.x - m_Image.X;
-	x_end = LastEmptyEnd.x - m_Image.X;
-
-	y_start = OldEmptyBegin.y - m_Image.Y;
-	y_end = LastEmptyEnd.y - m_Image.Y;
-
 	//恢复原来已经变暗的这部分图像,同时,用户选取的区域信息就保存在OldEmptyBegin和LastEmptyEnd中
+	//实际上这里恢复原图,可以将m_Imagecp整张图全拷贝过来,也并没有增加多大开销
 	for (int i = y_start; i < y_end; i++)
 	{
 		for (int j = x_start; j < x_end; j++)
@@ -3764,7 +3769,7 @@ void CImage_ProcessingView::OnColorimgsegment()
 		}
 
 	}
-	Invalidate(TRUE);
+
 	//区域内,RGB三个通道各自的均值
 	double b_mean(0), g_mean(0), r_mean(0);
 	int pixel_counts = (y_end - y_start)*(x_end - x_start);
@@ -3789,15 +3794,16 @@ void CImage_ProcessingView::OnColorimgsegment()
 			double dist = abs(m_Image.m_pBits[0][i][j] - b_mean) + abs(m_Image.m_pBits[1][i][j] - g_mean)
 				+ abs(m_Image.m_pBits[2][i][j]);
 
-			if (dist < 230) {
+			if (dist < 230) {  //这个阈值,可能不同的图,最佳选择不一样
+
 				m_Image.m_pBits[0][i][j] = b_mean;
 				m_Image.m_pBits[1][i][j] = g_mean;
 				m_Image.m_pBits[2][i][j] = r_mean;
 
 			}
 			else {
-				m_Image.m_pBits[0][i][j] = 240;
-				m_Image.m_pBits[1][i][j] = 120;
+				m_Image.m_pBits[0][i][j] = 40;
+				m_Image.m_pBits[1][i][j] = 240;
 				m_Image.m_pBits[2][i][j] = 40;
 			}
 		}
@@ -3859,19 +3865,51 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 
 				dc.SetROP2(nOldMode);
 				//MessageBox(L"22222!!");
-
 				LastEmptyEnd = point;  //保存结束点的坐标
-				IsROIChoosed = TRUE;  //修改标志位,后面有时间再加个判断,排除鼠标点击(也就是不选中区域的)事件
 
-
-				//局部变量,用以表示选中区域的相对坐标起始点
-				int x_start, y_start, x_end, y_end;
 				//TODO:根据点的相对位置,加以判断,计算x_start和x_end,y_start,y_end,从而使得用户可以以任意方式画矩形
-				x_start = OldEmptyBegin.x - m_Image.X;
-				x_end = LastEmptyEnd.x - m_Image.X;
+				if (OldEmptyBegin.x < LastEmptyEnd.x) //说明区域是从左往右划的
+				{
+					if (OldEmptyBegin.y < LastEmptyEnd.y)
+					{//从左上,划到右下
 
-				y_start = OldEmptyBegin.y - m_Image.Y;
-				y_end = LastEmptyEnd.y - m_Image.Y;
+						x_start = OldEmptyBegin.x - m_Image.X;
+						x_end = LastEmptyEnd.x - m_Image.X;
+
+						y_start = OldEmptyBegin.y - m_Image.Y;
+						y_end = LastEmptyEnd.y - m_Image.Y;
+
+					}
+					else
+					{ //从左下,划到右上
+						x_start = OldEmptyBegin.x - m_Image.X;
+						x_end = LastEmptyEnd.x - m_Image.X;
+
+						y_start = LastEmptyEnd.y - m_Image.Y;
+						y_end = OldEmptyBegin.y - m_Image.Y;
+					}
+				}
+				else {//说明区域是从右往左划的
+					if (OldEmptyBegin.y < LastEmptyEnd.y) //从右上 划到 左下
+					{
+						x_start = LastEmptyEnd.x - m_Image.X;
+						x_end = OldEmptyBegin.x - m_Image.X;
+
+						y_start = OldEmptyBegin.y - m_Image.Y;
+						y_end = LastEmptyEnd.y - m_Image.Y;
+
+					}
+					else  //从右下 划到 左上
+					{
+						x_start = LastEmptyEnd.x - m_Image.X;
+						x_end = OldEmptyBegin.x - m_Image.X;
+
+						y_start = LastEmptyEnd.y - m_Image.Y;
+						y_end = OldEmptyBegin.y - m_Image.Y;
+
+					}
+
+				}
 
 				//使得选中区域变暗,但是存在bug,即只能是从左上划到右下这样的区域,以后再来优化吧,要考虑的东西太多了!!!!
 				for (int i = y_start; i < y_end; i++)
@@ -3889,9 +3927,14 @@ void CImage_ProcessingView::OnLButtonUp(UINT nFlags, CPoint point)
 					}
 
 				}
+				
 				Invalidate(TRUE);
-
-
+				if (OldEmptyBegin.x !=LastEmptyEnd.x &&OldEmptyBegin.y!=LastEmptyEnd.y) {
+					IsROIChoosed = TRUE;  //修改标志位,这里的if判断是为了排除鼠标点击(也就是不选中区域的)事件
+				}
+				else {
+					IsROIChoosed = FALSE;  
+				}
 
 			}
 
@@ -3942,9 +3985,7 @@ void CImage_ProcessingView::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else {//使用矩形框的位置判断
 
-
 		return;
-
 	}
 
 	CWnd::OnMouseMove(nFlags, point);

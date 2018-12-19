@@ -65,7 +65,9 @@ public:
 	CPoint NowEmptyEnd;//移动时保存座标
 	CPoint LastEmptyEnd;  //鼠标松开时保存的坐标
 	BOOL IsROIChoosed =FALSE; //标志,表示用户是否已经选取了彩色图像分割的区域中心
-	BOOL IsSegment = FALSE; //标志,判断用户是否选择分割
+	int x_start, y_start, x_end, y_end;//变量,用以表示图片中,选中区域的相对坐标起始点
+
+
 
 	/*afs_msg 其中 afx_msg为消息标志，它向系统声明：有消息映射到函数实现体；
 	而在map宏定义中，就有具体消息和此函数的映射定义*/
