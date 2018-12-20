@@ -108,6 +108,7 @@ BEGIN_MESSAGE_MAP(CImage_ProcessingView, CScrollView)
 
 
 	ON_COMMAND(ID_BasicGlobalThresholdMethod, &CImage_ProcessingView::OnGlobalThreshold)
+	ON_COMMAND(ID_OtsuSegment, &CImage_ProcessingView::OnOtsusegment)
 END_MESSAGE_MAP()
 
 // CImage_ProcessingView 构造/析构
@@ -4005,23 +4006,19 @@ void CImage_ProcessingView::OnGlobalThreshold()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
-	//为全局阈值选择一个初始值T,后面考虑其他方式获取
-	double T = 125;
-	double T0 = T;
-
-	//分配一个三维数组,来不断的迭代保存分割图像,0,1,分别代表不同的类别
-	BOOL *** ImageClass = new BOOL**[3];
+	//分配一个三维数组,来不断的迭代保存分割(二值化)图像,0,1,分别代表不同的类别
+	BYTE *** TwoValueImage = new BYTE**[3];
 	for (int k = 0; k < 3; k++)
 	{
-		ImageClass[k] = new BOOL*[h];
+		TwoValueImage[k] = new BYTE*[h];
 		for (int i = 0; i < h; i++)
 		{
-			ImageClass[k][i] = new BOOL[w];
-			memset(ImageClass[k][i], 0, sizeof(BOOL)*w); //初始化
+			TwoValueImage[k][i] = new BYTE[w];
+			memset(TwoValueImage[k][i], 0, sizeof(BYTE)*w); //初始化
 		}
 	}
-
 	//转为灰度图
+	MessageBox(L"将转为灰度图!");
 	for (int i = 0; i < h; i++)
 	{
 		for (int j = 0; j < w; j++)
@@ -4035,43 +4032,109 @@ void CImage_ProcessingView::OnGlobalThreshold()
 			m_Image.m_pBits[2][j][i] = (BYTE)ave;
 		}
 	}
+	Invalidate(TRUE);
 
 	double delta = 1;
+	int cls_cnt1(0), cls_cnt2(0); //每个类别各自点的个数
+	double m1(0), m2(0); //平均灰度
+	
+	double T = 80;   //为全局阈值选择一个初始值T,后面考虑使用对话框,去让用户输入
+	double old_T = 0;
+	double new_T = T;  //初始的阈值T,实际上就相当于是new_T
 
-	while (abs(T - T0) > delta)
+	//转为了灰度图,因此我们只考虑单个通道上的情况
+	MessageBox(L"将开始分割!");
+	while (abs(new_T - old_T) > delta)
 	{
 		//分割
 		for (int i = 0; i < h; i++)
 		{
 			for (int j = 0; j < w; j++)
 			{
-				if (m_Image.m_pBits[0][i][j] < T) 
+				if (m_Image.m_pBits[0][i][j] < T)   //二值化
 				{
-					ImageClass[0][i][j] = 0;
+					TwoValueImage[0][i][j] = 0;
+					cls_cnt1++;
 				}
 				else
 				{
-					ImageClass[0][i][j] = 1;
-				
+					TwoValueImage[0][i][j] = 255;
+					cls_cnt2++;
 				}
 			}
 		}
-		//计算平均灰度
-		double m1(0), m2(0);
+		//计算原图平均灰度
+		
 		for (int i = 0; i < h; i++)
 		{
 			for (int j = 0; j < w; j++)
 			{
-				
+				if (m_Image.m_pBits[0][i][j] < T) 
+				{
+					m1 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt1+0.0001);  //防止极端情况,除数为0的情况
+				}
+				else
+				{
+					m2 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt2+0.0001);
+				}
 			}
 		}
 
+		T = 0.5*(m1 + m2);
+		old_T = new_T;  //这样交换下,啊哈哈哈哈
+		new_T = T;
+
+		//归零
+		m1 = 0;
+		m2 = 0;
+		cls_cnt1 = 0;
+		cls_cnt2 = 0;
+
 	}
 	
-	
+	//将全局阈值的分割结果表现在原图上
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			for (int k = 0; k < 3; k++)
+			{
 
+				m_Image.m_pBits[k][i][j] = TwoValueImage[0][i][j];
+
+			}
+
+		}
+	}
+	
 	//释放内存
+	for (int k = 0; k < 3; k++)
+	{
+		for (int i = 0; i < h; i++)
+		{
+			delete[]TwoValueImage[k][i];
+		}
+		delete[]TwoValueImage[k];
+	}
+	delete[]TwoValueImage;
+
 
 
 	Invalidate(TRUE);
+}
+
+
+void CImage_ProcessingView::OnOtsusegment()
+{
+	// TODO: Otsu最大类间方差法(大津法)
+	if (m_Image.IsNull())
+	{
+		OnFileOpen();
+		return;
+	}
+	w = m_Image.GetWidth();
+	h = m_Image.GetHeight();
+
+
+
 }

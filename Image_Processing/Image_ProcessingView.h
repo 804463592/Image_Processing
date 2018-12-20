@@ -133,6 +133,7 @@ public:
 
 
 	afx_msg void OnGlobalThreshold();
+	afx_msg void OnOtsusegment();
 };
 
 #ifndef _DEBUG  // Image_ProcessingView.cpp 中的调试版本
