@@ -4037,7 +4037,7 @@ void CImage_ProcessingView::OnGlobalThreshold()
 	double delta = 1;
 	int cls_cnt1(0), cls_cnt2(0); //每个类别各自点的个数
 	double m1(0), m2(0); //平均灰度
-	
+
 	double T = 80;   //为全局阈值选择一个初始值T,后面考虑使用对话框,去让用户输入
 	double old_T = 0;
 	double new_T = T;  //初始的阈值T,实际上就相当于是new_T
@@ -4064,34 +4064,33 @@ void CImage_ProcessingView::OnGlobalThreshold()
 			}
 		}
 		//计算原图平均灰度
-		
+
 		for (int i = 0; i < h; i++)
 		{
 			for (int j = 0; j < w; j++)
 			{
-				if (m_Image.m_pBits[0][i][j] < T) 
+				if (m_Image.m_pBits[0][i][j] < T)
 				{
-					m1 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt1+0.0001);  //防止极端情况,除数为0的情况
+					m1 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt1 + 0.00001);  //防止极端情况,除数为0的情况
 				}
 				else
 				{
-					m2 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt2+0.0001);
+					m2 += (double)m_Image.m_pBits[0][i][j] / ((double)cls_cnt2 + 0.00001);
 				}
 			}
 		}
 
 		T = 0.5*(m1 + m2);
-		old_T = new_T;  //这样交换下,啊哈哈哈哈
+		old_T = new_T;  //新旧阈值的更新
 		new_T = T;
 
-		//归零
+		//参数归零
 		m1 = 0;
 		m2 = 0;
 		cls_cnt1 = 0;
 		cls_cnt2 = 0;
-
 	}
-	
+
 	//将全局阈值的分割结果表现在原图上
 	for (int i = 0; i < h; i++)
 	{
@@ -4106,7 +4105,6 @@ void CImage_ProcessingView::OnGlobalThreshold()
 
 		}
 	}
-	
 	//释放内存
 	for (int k = 0; k < 3; k++)
 	{
@@ -4118,15 +4116,14 @@ void CImage_ProcessingView::OnGlobalThreshold()
 	}
 	delete[]TwoValueImage;
 
-
-
 	Invalidate(TRUE);
 }
 
 
 void CImage_ProcessingView::OnOtsusegment()
 {
-	// TODO: Otsu最大类间方差法(大津法)
+	// TODO: Otsu最大类间方差法(大津法),我们需要的就是使得类间方差最大的灰度值,然后做二值化.
+
 	if (m_Image.IsNull())
 	{
 		OnFileOpen();
@@ -4135,6 +4132,144 @@ void CImage_ProcessingView::OnOtsusegment()
 	w = m_Image.GetWidth();
 	h = m_Image.GetHeight();
 
+	//先转为灰度图再处理
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			int b = (int)m_Image.m_pBits[0][i][j];
+			int g = (int)m_Image.m_pBits[1][i][j];
+			int r = (int)m_Image.m_pBits[2][i][j];
+			int ave = (20 * r + 50 * g + 30 * b) / 100;
+			m_Image.m_pBits[0][i][j] = (BYTE)ave;
+			m_Image.m_pBits[1][i][j] = (BYTE)ave;
+			m_Image.m_pBits[2][i][j] = (BYTE)ave;
+		}
+	}
+
+	//计算图像的直方图
+	int *hist_cnt = new int[256];
+	memset(hist_cnt, 0, sizeof(int) * 256);
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			hist_cnt[m_Image.m_pBits[0][i][j]]++;
+		}
+	}
+	//直方图统计归一化
+	double *hist_prob = new double[256];
+	memset(hist_prob, 0, sizeof(double) * 256);
+	for (int i = 0; i < 256; i++)
+	{
+		hist_prob[i] = (double)hist_cnt[i] / double(w*h);
+	}
+
+	//计算累积和概率
+	double *cum_dst = new double[256];
+	memset(cum_dst, 0, sizeof(double) * 256);
+	for (int i = 0; i < 256; i++)
+	{
+		if (0 == i) {
+			cum_dst[i] = hist_prob[i];
+		}
+		else {
+			cum_dst[i] = cum_dst[i - 1] + hist_prob[i];
+		}
+
+	}
+
+	//计算累积均值m(k)
+	double *m = new double[256];
+	memset(m, 0, sizeof(double) * 256);
+	for (int k = 0; k < 256; k++)
+	{
+		for (int i = 0; i < k + 1; i++)
+		{
+			m[k] += i * hist_prob[i];
+		}
+	}
+
+	//计算全局均值mG
+	double mG(0);
+	mG = m[255];
+
+	//计算类间方差sigma2
+	double *sigma2 = new double[256];
+	memset(sigma2, 0, sizeof(double) * 256);
+	for (int k = 0; k < 256; k++)
+	{
+		sigma2[k] = (mG*cum_dst[k] - m[k])*(mG*cum_dst[k] - m[k]) / (cum_dst[k] * (1 - cum_dst[k]) + 0.0001);  //注意分母为0的情况
+	}
+	//找到使得sigmaB2最大的灰度值(若存在多个,则取灰度值的平均值),记为T
+	BYTE T(0);
+	double max_sigma2(0);
+	max_sigma2 = sigma2[0];
+	vector<double> max_T;
+	for (int k = 0; k < 256; k++) //先考虑找个最大值之一的阈值T,后面再来找其他的
+	{
+		if (sigma2[k] > max_sigma2)
+		{
+			T = k;
+			max_sigma2 = sigma2[k];
+		}
+	}
+	for (int k = 0; k < 256; k++) { //找到使得类间方差值最大的所有灰度级,存在vector中
+
+		if (sigma2[k] == max_sigma2)
+		{
+			max_T.push_back(k);
+		}
+	}
+	double sum_T(0), cnt_T(0); //计算所有T值的平均值
+	for (vector<double>::iterator iter = max_T.begin(); iter != max_T.end(); iter++)
+	{
+		sum_T += *iter;
+		cnt_T++;
+	}
+	T = BYTE(sum_T / cnt_T);//得到所需要的阈值
+
+	//计算可分性度量eta
+	double sigmaG2(0);
+	for (int i = 0; i < 256; i++)
+	{
+		sigmaG2 += (i - mG)*(i - mG)*hist_prob[i];
+	}
+	double eta = sigma2[T] / sigmaG2;
+
+	//使用T二值化图像
+	for (int i = 0; i < h; i++)
+	{
+		for (int j = 0; j < w; j++)
+		{
+			if (m_Image.m_pBits[0][i][j] < T)
+			{
+				m_Image.m_pBits[0][i][j] = 0;
+				m_Image.m_pBits[1][i][j] = 0;
+				m_Image.m_pBits[2][i][j] = 0;
+			}
+			else
+			{
+				m_Image.m_pBits[0][i][j] = 255;
+				m_Image.m_pBits[1][i][j] = 255;
+				m_Image.m_pBits[2][i][j] = 255;
+			}
+
+		}
+
+	}
+	Invalidate(TRUE);
 
 
+	//释放内存
+	delete[]hist_cnt;
+	delete[]hist_prob;
+	delete[]cum_dst;
+	delete[]m;
+	delete[]sigma2;
+
+	CString s;
+	s.Format(L"Otsu方法得到的阈值为%d,可分性度量为%2.3f", T, eta);  //显示提示信息
+	MessageBox(s);
+	//MessageBox(L"这是一个有标题的消息框", L"标题");
 }
